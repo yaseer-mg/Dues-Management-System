@@ -9,19 +9,19 @@ start a phase's step until the previous step is working. Confirm each phase's
 ## Phase 0 — Project Setup
 
 - [x] 1. Create repo structure: `/backend`, `/frontend`, root `README.md`.
-2. Init backend: `npm init`, install `express`, `mysql2`, a migration tool
+- [x] 2. Init backend: `npm init`, install `express`, `mysql2`, a migration tool
    (Knex or Sequelize — pick one), `dotenv`, `bcrypt` or `argon2`,
    `jsonwebtoken`, `cors`, `helmet`.
-3. Init frontend: `create-react-app` or Vite React app, install `axios` or
+- [x] 3. Init frontend: `create-react-app` or Vite React app, install `axios` or
    `fetch`-based API client, `react-router-dom`.
-4. Set up `.env.example` in `/backend` listing every required variable (DB
+- [x] 4. Set up `.env.example` in `/backend` listing every required variable (DB
    host/user/pass/name, JWT secret, payment gateway keys, webhook secret) —
    no real values.
-5. Configure MySQL connection module in `/backend` using env vars.
-6. Set up migration tool config; create a first empty migration to confirm
+- [x] 5. Configure MySQL connection module in `/backend` using env vars.
+- [x] 6. Set up migration tool config; create a first empty migration to confirm
    the pipeline runs.
-7. Add `GET /health` endpoint returning `{ status: "ok", db: true/false }`.
-8. Add basic error-handling middleware and a consistent JSON response shape.
+- [x] 7. Add `GET /health` endpoint returning `{ status: "ok", db: true/false }`.
+- [x] 8. Add basic error-handling middleware and a consistent JSON response shape.
 
 **Done when:** backend starts, connects to MySQL, `/health` returns success,
 frontend builds and can call `/health`.
