@@ -59,7 +59,7 @@ guessing an ID in the URL.
 - [x] 1. Migration: `contribution_categories` table.
 - [x] 2. Endpoint: Central Management CRUD for categories (name, amount, status).
 - [x] 3. Migration: `members` table.
-4. Implement `member_code` auto-generation: create the row first to get its
+- [x] 4. Implement `member_code` auto-generation: create the row first to get its
    `id`, then set `member_code = 'MEM-' + zero-padded id`, then save.
 5. Endpoint: `POST /members` — Sub-Unit Management only, scoped to their own
    `sub_unit_id`.
