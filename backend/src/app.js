@@ -44,6 +44,9 @@ app.get('/health', async (req, res) => {
 const authRoutes = require('./routes/authRoutes');
 app.use('/auth', authRoutes);
 
+const orgRoutes = require('./routes/orgRoutes');
+app.use('/api', orgRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;

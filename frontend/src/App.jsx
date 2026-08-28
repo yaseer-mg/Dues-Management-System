@@ -1,42 +1,32 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import OrgList from './pages/OrgList';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
-
-function App() {
-  const [health, setHealth] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/health`);
-        setHealth(res.data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkHealth();
-  }, []);
-
-  if (loading) return <div className="card">Checking backend health...</div>;
-
+export default function App() {
   return (
-    <div className="container">
-      <h1>Dues Management System</h1>
-      <div className="card">
-        <h2>Backend Health Check</h2>
-        {error && <p className="error">Error: {error}</p>}
-        {health && (
-          <pre>{JSON.stringify(health, null, 2)}</pre>
-        )}
-      </div>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/zones" element={<OrgList title="Zones" endpoint="/api/zones" />} />
+            <Route path="/units" element={<OrgList title="Units" endpoint="/api/units" />} />
+            <Route path="/sub-units" element={<OrgList title="Sub-Units" endpoint="/api/sub-units" />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
-
-export default App;

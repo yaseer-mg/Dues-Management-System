@@ -43,10 +43,10 @@ frontend builds and can call `/health`.
 - [x] 8. Implement scope middleware: injects the user's `zone_id`/`unit_id`/
    `sub_unit_id` into query filters automatically (never trust a scope value
    sent from the client).
-9. CRUD endpoints for `zones`, `units`, `sub_units` — Central Management only
+- [x] 9. CRUD endpoints for `zones`, `units`, `sub_units` — Central Management only
    for create/edit; scoped read access for other roles.
-10. Frontend: login page, JWT storage, protected route wrapper, basic
-    role-based navigation shell.
+- [x] 10. Frontend: login page, JWT storage, protected route wrapper, basic
+     role-based navigation shell.
 
 **Done when:** each of the five roles can log in and see only data within
 their own scope; a Zone user cannot read another Zone's data even by
