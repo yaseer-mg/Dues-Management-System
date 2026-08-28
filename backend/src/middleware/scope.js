@@ -43,6 +43,28 @@ function scopeMiddleware(req, res, next) {
         }
         break;
       }
+      case 'members': {
+        if (user.sub_unit_id) {
+          conditions.push({ type: 'eq', column: 'members.sub_unit_id', value: user.sub_unit_id });
+        } else if (user.unit_id) {
+          conditions.push({
+            type: 'whereInSubquery',
+            column: 'members.sub_unit_id',
+            table: 'sub_units',
+            subColumn: 'id',
+            where: { unit_id: user.unit_id },
+          });
+        } else if (user.zone_id) {
+          conditions.push({
+            type: 'whereInSubquery',
+            column: 'members.sub_unit_id',
+            table: 'sub_units',
+            subColumn: 'id',
+            whereIn: { column: 'unit_id', table: 'units', subColumn: 'id', where: { zone_id: user.zone_id } },
+          });
+        }
+        break;
+      }
       default:
         break;
     }
@@ -56,7 +78,12 @@ function scopeMiddleware(req, res, next) {
         query.where(cond.column, cond.value);
       } else if (cond.type === 'whereInSubquery') {
         query.whereIn(cond.column, function () {
-          this.select(cond.subColumn).from(cond.table).where(cond.where);
+          const sub = this.select(cond.subColumn).from(cond.table).where(cond.where);
+          if (cond.whereIn) {
+            sub.whereIn(cond.whereIn.column, function () {
+              this.select(cond.whereIn.subColumn).from(cond.whereIn.table).where(cond.whereIn.where);
+            });
+          }
         });
       }
     });

@@ -50,6 +50,9 @@ app.use('/api', orgRoutes);
 const categoryRoutes = require('./routes/categoryRoutes');
 app.use('/api', categoryRoutes);
 
+const memberRoutes = require('./routes/memberRoutes');
+app.use('/api', memberRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;

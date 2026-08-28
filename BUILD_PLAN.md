@@ -61,9 +61,9 @@ guessing an ID in the URL.
 - [x] 3. Migration: `members` table.
 - [x] 4. Implement `member_code` auto-generation: create the row first to get its
    `id`, then set `member_code = 'MEM-' + zero-padded id`, then save.
-5. Endpoint: `POST /members` — Sub-Unit Management only, scoped to their own
+- [x] 5. Endpoint: `POST /members` — Sub-Unit Management only, scoped to their own
    `sub_unit_id`.
-6. Endpoint: `GET /members/:code` and `GET /members?search=` (by name or
+- [x] 6. Endpoint: `GET /members/:code` and `GET /members?search=` (by name or
    code), scoped by caller's role (Collector sees only their sub-unit,
    Central sees all, etc.).
 7. Endpoint: `PATCH /members/:id` — update member details, scoped access.
