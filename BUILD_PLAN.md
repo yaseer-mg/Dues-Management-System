@@ -67,7 +67,7 @@ guessing an ID in the URL.
    code), scoped by caller's role (Collector sees only their sub-unit,
    Central sees all, etc.).
 - [x] 7. Endpoint: `PATCH /members/:id` — update member details, scoped access.
-8. Frontend: member registration form, member search/list view, scoped by
+- [x] 8. Frontend: member registration form, member search/list view, scoped by
    logged-in role.
 
 **Done when:** a Sub-Unit officer can register a member and immediately find

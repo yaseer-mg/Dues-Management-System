@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import OrgList from './pages/OrgList';
+import Members from './pages/Members';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/members" element={<Members />} />
             <Route path="/zones" element={<OrgList title="Zones" endpoint="/api/zones" />} />
             <Route path="/units" element={<OrgList title="Units" endpoint="/api/units" />} />
             <Route path="/sub-units" element={<OrgList title="Sub-Units" endpoint="/api/sub-units" />} />
