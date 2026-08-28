@@ -40,7 +40,7 @@ frontend builds and can call `/health`.
 - [x] 6. Implement auth middleware: verifies JWT, attaches `req.user`.
 - [x] 7. Implement RBAC middleware: checks `req.user.role` against allowed roles
    per route.
-8. Implement scope middleware: injects the user's `zone_id`/`unit_id`/
+- [x] 8. Implement scope middleware: injects the user's `zone_id`/`unit_id`/
    `sub_unit_id` into query filters automatically (never trust a scope value
    sent from the client).
 9. CRUD endpoints for `zones`, `units`, `sub_units` — Central Management only
