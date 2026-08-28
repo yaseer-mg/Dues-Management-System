@@ -38,7 +38,7 @@ frontend builds and can call `/health`.
 - [x] 5. Implement `POST /auth/login` — verify credentials, issue JWT containing
    `user_id`, `role`, and scope IDs.
 - [x] 6. Implement auth middleware: verifies JWT, attaches `req.user`.
-7. Implement RBAC middleware: checks `req.user.role` against allowed roles
+- [x] 7. Implement RBAC middleware: checks `req.user.role` against allowed roles
    per route.
 8. Implement scope middleware: injects the user's `zone_id`/`unit_id`/
    `sub_unit_id` into query filters automatically (never trust a scope value
