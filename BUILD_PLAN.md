@@ -35,7 +35,7 @@ frontend builds and can call `/health`.
 - [x] 3. Migration: `users` table (staff only), with nullable `zone_id`/`unit_id`/
    `sub_unit_id` scope columns.
 - [x] 4. Implement password hashing utility (bcrypt/Argon2).
-5. Implement `POST /auth/login` — verify credentials, issue JWT containing
+- [x] 5. Implement `POST /auth/login` — verify credentials, issue JWT containing
    `user_id`, `role`, and scope IDs.
 6. Implement auth middleware: verifies JWT, attaches `req.user`.
 7. Implement RBAC middleware: checks `req.user.role` against allowed roles
