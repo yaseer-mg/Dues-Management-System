@@ -56,8 +56,8 @@ guessing an ID in the URL.
 
 ## Phase 2 — Members & Categories
 
-1. Migration: `contribution_categories` table.
-2. Endpoint: Central Management CRUD for categories (name, amount, status).
+- [x] 1. Migration: `contribution_categories` table.
+- [x] 2. Endpoint: Central Management CRUD for categories (name, amount, status).
 3. Migration: `members` table.
 4. Implement `member_code` auto-generation: create the row first to get its
    `id`, then set `member_code = 'MEM-' + zero-padded id`, then save.

@@ -47,6 +47,9 @@ app.use('/auth', authRoutes);
 const orgRoutes = require('./routes/orgRoutes');
 app.use('/api', orgRoutes);
 
+const categoryRoutes = require('./routes/categoryRoutes');
+app.use('/api', categoryRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;
