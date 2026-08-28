@@ -98,4 +98,51 @@ const getMember = asyncHandler(async (req, res) => {
   return res.success(member);
 });
 
-module.exports = { createMember, listMembers, getMember };
+const updateMember = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, phone, gender, date_of_birth, contribution_category_id, status } = req.body;
+
+  // Scoped fetch: only update a member that the caller can access.
+  const existing = await req.scope.query(
+    db('members').where('members.id', id).first(),
+    'members'
+  );
+  if (!existing) return res.error('Member not found', 404);
+
+  const updates = {};
+
+  if (name !== undefined) updates.name = name;
+  if (phone !== undefined) updates.phone = phone || null;
+  if (gender !== undefined) {
+    if (!['MALE', 'FEMALE'].includes(gender)) {
+      return res.error('gender must be MALE or FEMALE', 400);
+    }
+    updates.gender = gender;
+  }
+  if (date_of_birth !== undefined) updates.date_of_birth = date_of_birth || null;
+  if (status !== undefined) {
+    if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+      return res.error('status must be ACTIVE or INACTIVE', 400);
+    }
+    updates.status = status;
+  }
+  if (contribution_category_id !== undefined) {
+    const category = await db('contribution_categories')
+      .where('id', contribution_category_id)
+      .first();
+    if (!category || category.status !== 'ACTIVE') {
+      return res.error('Invalid or inactive contribution category', 400);
+    }
+    updates.contribution_category_id = contribution_category_id;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.error('Nothing to update', 400);
+  }
+
+  await db('members').where('id', id).update(updates);
+  const member = await db('members').where('id', id).first();
+  return res.success(member, 'Member updated');
+});
+
+module.exports = { createMember, listMembers, getMember, updateMember };

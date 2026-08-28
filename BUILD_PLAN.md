@@ -66,7 +66,7 @@ guessing an ID in the URL.
 - [x] 6. Endpoint: `GET /members/:code` and `GET /members?search=` (by name or
    code), scoped by caller's role (Collector sees only their sub-unit,
    Central sees all, etc.).
-7. Endpoint: `PATCH /members/:id` — update member details, scoped access.
+- [x] 7. Endpoint: `PATCH /members/:id` — update member details, scoped access.
 8. Frontend: member registration form, member search/list view, scoped by
    logged-in role.
 
