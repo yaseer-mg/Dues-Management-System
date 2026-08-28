@@ -28,13 +28,13 @@ frontend builds and can call `/health`.
 
 ---
 
-## Phase 1 — Auth & Org Hierarchy
+## Phase 1: Auth & Org Hierarchy
 
-1. Migration: `roles` table; seed the five fixed roles.
-2. Migration: `zones`, `units`, `sub_units` tables (per `ARCHITECTURE.md` §5).
-3. Migration: `users` table (staff only), with nullable `zone_id`/`unit_id`/
+- [x] 1. Migration: `roles` table; seed the five fixed roles.
+- [x] 2. Migration: `zones`, `units`, `sub_units` tables (per `ARCHITECTURE.md` §5).
+- [x] 3. Migration: `users` table (staff only), with nullable `zone_id`/`unit_id`/
    `sub_unit_id` scope columns.
-4. Implement password hashing utility (bcrypt/Argon2).
+- [x] 4. Implement password hashing utility (bcrypt/Argon2).
 5. Implement `POST /auth/login` — verify credentials, issue JWT containing
    `user_id`, `role`, and scope IDs.
 6. Implement auth middleware: verifies JWT, attaches `req.user`.
