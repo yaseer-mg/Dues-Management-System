@@ -37,7 +37,7 @@ frontend builds and can call `/health`.
 - [x] 4. Implement password hashing utility (bcrypt/Argon2).
 - [x] 5. Implement `POST /auth/login` — verify credentials, issue JWT containing
    `user_id`, `role`, and scope IDs.
-6. Implement auth middleware: verifies JWT, attaches `req.user`.
+- [x] 6. Implement auth middleware: verifies JWT, attaches `req.user`.
 7. Implement RBAC middleware: checks `req.user.role` against allowed roles
    per route.
 8. Implement scope middleware: injects the user's `zone_id`/`unit_id`/
