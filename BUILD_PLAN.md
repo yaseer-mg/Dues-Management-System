@@ -80,7 +80,7 @@ them by code or name; a Collector in a different sub-unit cannot see them.
 - [x] 1. Migration: `contribution_periods` table with `UNIQUE(month, year)`.
 - [x] 2. Migration: `member_contributions` table with
    `UNIQUE(member_id, contribution_period_id)`.
-3. Implement "open a period" logic: create the period row, then in one
+- [x] 3. Implement "open a period" logic: create the period row, then in one
    transaction insert a `member_contributions` row (status UNPAID) for every
    ACTIVE member, snapshotting `expected_amount` from their current category.
 4. Expose this as `POST /contribution-periods` (Central Management only) —
