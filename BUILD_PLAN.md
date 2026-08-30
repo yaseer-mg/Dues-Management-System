@@ -83,10 +83,10 @@ them by code or name; a Collector in a different sub-unit cannot see them.
 - [x] 3. Implement "open a period" logic: create the period row, then in one
    transaction insert a `member_contributions` row (status UNPAID) for every
    ACTIVE member, snapshotting `expected_amount` from their current category.
-4. Expose this as `POST /contribution-periods` (Central Management only) —
+- [x] 4. Expose this as `POST /contribution-periods` (Central Management only) —
    can be triggered manually for now; note in code where a scheduled job
    could call the same function automatically on the 1st of each month.
-5. Endpoint: `GET /contribution-periods`, `GET /members/:id/contributions`
+- [x] 5. Endpoint: `GET /contribution-periods`, `GET /members/:id/contributions`
    (a member's payment history across periods).
 6. Frontend: view for Central Management to open a new period; view for
    staff to see a member's contribution history.
