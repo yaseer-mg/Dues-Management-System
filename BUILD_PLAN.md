@@ -88,7 +88,7 @@ them by code or name; a Collector in a different sub-unit cannot see them.
    could call the same function automatically on the 1st of each month.
 - [x] 5. Endpoint: `GET /contribution-periods`, `GET /members/:id/contributions`
    (a member's payment history across periods).
-6. Frontend: view for Central Management to open a new period; view for
+- [x] 6. Frontend: view for Central Management to open a new period; view for
    staff to see a member's contribution history.
 
 **Done when:** opening a period creates the correct number of UNPAID rows

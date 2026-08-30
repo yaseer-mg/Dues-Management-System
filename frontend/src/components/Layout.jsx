@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 const NAV_ITEMS = [
   { label: 'Dashboard', to: '/dashboard', roles: ['Central Management', 'Zone Management', 'Unit Management', 'Sub-Unit Management', 'Collector'] },
   { label: 'Members', to: '/members', roles: ['Central Management', 'Zone Management', 'Unit Management', 'Sub-Unit Management', 'Collector'] },
+  { label: 'Periods', to: '/periods', roles: ['Central Management'] },
   { label: 'Zones', to: '/zones', roles: ['Central Management'] },
   { label: 'Units', to: '/units', roles: ['Central Management'] },
   { label: 'Sub-Units', to: '/sub-units', roles: ['Central Management'] },

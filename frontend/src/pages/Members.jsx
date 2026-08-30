@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -148,7 +149,7 @@ export default function Members() {
       ) : (
         <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
+            <table className="w-full text-sm min-w-[680px]">
               <thead>
                 <tr className="bg-emerald-50 text-emerald-700 text-left">
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Code</th>
@@ -156,6 +157,7 @@ export default function Members() {
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Phone</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Category</th>
                   <th className="px-4 py-3 font-semibold whitespace-nowrap">Status</th>
+                  <th className="px-4 py-3 font-semibold whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody>
@@ -169,6 +171,11 @@ export default function Members() {
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${m.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                         {m.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right">
+                      <Link to={`/members/${m.id}/contributions`} className="text-emerald-600 hover:text-emerald-800 font-medium text-xs">
+                        History →
+                      </Link>
                     </td>
                   </tr>
                 ))}
