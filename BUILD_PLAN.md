@@ -99,7 +99,7 @@ twice for the same month does not duplicate rows.
 
 ## Phase 4 — Cash Payments
 
-1. Migration: `payments` table (per `ARCHITECTURE.md` §5), CASH path only
+- [x] 1. Migration: `payments` table (per `ARCHITECTURE.md` §5), CASH path only
    for this phase.
 2. Endpoint: `POST /payments/cash` — Collector only, scoped to their own
    sub-unit's members. Body: `member_contribution_id`, `amount`.
