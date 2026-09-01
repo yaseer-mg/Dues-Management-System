@@ -56,6 +56,9 @@ app.use('/api', memberRoutes);
 const contributionRoutes = require('./routes/contributionRoutes');
 app.use('/api', contributionRoutes);
 
+const paymentRoutes = require('./routes/paymentRoutes');
+app.use('/api', paymentRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;

@@ -101,13 +101,13 @@ twice for the same month does not duplicate rows.
 
 - [x] 1. Migration: `payments` table (per `ARCHITECTURE.md` §5), CASH path only
    for this phase.
-2. Endpoint: `POST /payments/cash` — Collector only, scoped to their own
+- [x] 2. Endpoint: `POST /payments/cash` — Collector only, scoped to their own
    sub-unit's members. Body: `member_contribution_id`, `amount`.
-3. Logic: verify the `member_contributions` row is UNPAID and belongs to the
+- [x] 3. Logic: verify the `member_contributions` row is UNPAID and belongs to the
    Collector's sub-unit → insert `payments` row (method CASH, status
    SUCCESS, `recorded_by`) → update `member_contributions.status = PAID`,
    `paid_at = now()` → all inside one DB transaction.
-4. Rely on the `UNIQUE(member_id, contribution_period_id)` constraint to
+- [x] 4. Rely on the `UNIQUE(member_id, contribution_period_id)` constraint to
    reject a second payment attempt for an already-PAID period; surface a
    clean error message on that constraint violation.
 5. Write an `audit_logs` entry for the payment (see Phase 7 table, but you
