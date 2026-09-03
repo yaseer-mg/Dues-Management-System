@@ -87,9 +87,54 @@ async function createPaymentLink({ member_contribution_id, amount, collector }, 
   return result;
 }
 
+// Public lookup: returns period/amount info for a PENDING, non-expired link.
+// Never returns member profile or internal ids. Returns { error } otherwise.
+async function getPublicLink({ token }) {
+  const link = await db('payment_links')
+    .where('token', token)
+    .first();
+
+  if (!link) {
+    return { error: { status: 404, message: 'Payment link not found' } };
+  }
+  if (link.status !== 'PENDING') {
+    return { error: { status: 410, message: 'This payment link is no longer active' } };
+  }
+  if (!link.expires_at || new Date(link.expires_at).getTime() <= Date.now()) {
+    return { error: { status: 410, message: 'This payment link has expired' } };
+  }
+
+  const info = await db('member_contributions')
+    .join('contribution_periods', 'member_contributions.contribution_period_id', 'contribution_periods.id')
+    .select(
+      'member_contributions.expected_amount',
+      'member_contributions.status as contribution_status',
+      'contribution_periods.month',
+      'contribution_periods.year'
+    )
+    .where('member_contributions.id', link.member_contribution_id)
+    .first();
+
+  if (!info) {
+    return { error: { status: 404, message: 'Contribution not found' } };
+  }
+  if (info.contribution_status === 'PAID') {
+    return { error: { status: 410, message: 'This contribution has already been paid' } };
+  }
+
+  return {
+    data: {
+      token,
+      amount: info.expected_amount,
+      month: info.month,
+      year: info.year,
+    },
+  };
+}
+
 function buildPaymentUrl(token) {
   const base = process.env.PAYMENT_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
   return `${base}/pay/${token}`;
 }
 
-module.exports = { createPaymentLink, LINK_TTL_MINUTES };
+module.exports = { createPaymentLink, getPublicLink, LINK_TTL_MINUTES };

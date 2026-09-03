@@ -127,7 +127,7 @@ flips to PAID, and a second attempt for the same period is cleanly rejected.
    token (`crypto.randomBytes`), sets `expires_at` (+30 min), links to the
    target `member_contribution_id`.  [x]
 3. Public endpoint: `GET /payment/:token` — returns period/amount info only
-   if token is PENDING and not expired.
+   if token is PENDING and not expired.  [x]
 4. Public endpoint: `POST /payment/:token/verify-member` — accepts a
    `member_code` guess. On mismatch, increment `attempt_count`; if it hits
    the limit, set `locked_until`. Reject any attempt while `locked_until` is

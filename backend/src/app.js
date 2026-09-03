@@ -62,6 +62,9 @@ app.use('/api', paymentRoutes);
 const paymentLinkRoutes = require('./routes/paymentLinkRoutes');
 app.use('/api', paymentLinkRoutes);
 
+const paymentPublicRoutes = require('./routes/paymentPublicRoutes');
+app.use('/', paymentPublicRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;
