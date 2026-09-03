@@ -144,7 +144,7 @@ flips to PAID, and a second attempt for the same period is cleanly rejected.
      `member_contributions.status = PAID`, `payment_links.status = USED`,
      all in one transaction.  [x]
 7. Frontend: public payment page (token → member code entry → confirm →
-   pay), Collector "Generate Link" action with WhatsApp share.
+   pay), Collector "Generate Link" action with WhatsApp share.  [x]
 
 **Done when:** a full online payment, run twice against the same webhook
 event, results in exactly one SUCCESS payment and one PAID contribution —

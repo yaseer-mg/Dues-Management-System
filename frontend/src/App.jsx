@@ -9,6 +9,7 @@ import Members from './pages/Members';
 import ManagePeriods from './pages/ManagePeriods';
 import MemberContributions from './pages/MemberContributions';
 import CollectCash from './pages/CollectCash';
+import PayLink from './pages/PayLink';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/pay/:token" element={<PayLink />} />
           <Route
             element={
               <ProtectedRoute>

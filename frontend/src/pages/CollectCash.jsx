@@ -28,6 +28,9 @@ export default function CollectCash() {
   const [payError, setPayError] = useState('');
   const [payingId, setPayingId] = useState(null);
 
+  const [linkInfo, setLinkInfo] = useState(null); // { token, payment_url, amount, period }
+  const [generatingId, setGeneratingId] = useState(null);
+
   const handleSearch = async (e) => {
     e.preventDefault();
     setSearching(true);
@@ -87,6 +90,37 @@ export default function CollectCash() {
     } catch (err) {
       setContribs([]);
     }
+  };
+
+  const generateLink = async (mc) => {
+    setGeneratingId(mc.id);
+    setPayError('');
+    setNotice('');
+    setLinkInfo(null);
+    try {
+      const res = await api.post('/api/payment-links', {
+        member_contribution_id: mc.id,
+        amount: mc.expected_amount,
+      });
+      setLinkInfo({
+        token: res.data.data.token,
+        payment_url: res.data.data.payment_url,
+        amount: mc.expected_amount,
+        period: periodLabel(mc),
+        member: selected.name,
+      });
+    } catch (err) {
+      setPayError(err.response?.data?.message || 'Failed to generate payment link');
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const whatsappHref = (info) => {
+    const text = encodeURIComponent(
+      `Hello ${info.member}, please pay your dues of ₦${Number(info.amount).toLocaleString()} for ${info.period} using this secure link: ${info.payment_url}`
+    );
+    return `https://wa.me/?text=${text}`;
   };
 
   const inputCls =
@@ -181,13 +215,24 @@ export default function CollectCash() {
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         {c.status === 'UNPAID' ? (
-                          <button
-                            onClick={() => collectPayment(c)}
-                            disabled={payingId === c.id}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition"
-                          >
-                            {payingId === c.id ? 'Collecting...' : 'Collect Cash'}
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => collectPayment(c)}
+                              disabled={payingId === c.id}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition"
+                            >
+                              {payingId === c.id ? 'Collecting...' : 'Collect Cash'}
+                            </button>
+                            {isCollector && (
+                              <button
+                                onClick={() => generateLink(c)}
+                                disabled={generatingId === c.id}
+                                className="px-3 py-1.5 border border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:opacity-60 text-xs font-semibold rounded-lg transition"
+                              >
+                                {generatingId === c.id ? 'Creating...' : 'Link'}
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-400">paid</span>
                         )}
@@ -196,6 +241,39 @@ export default function CollectCash() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {linkInfo && (
+            <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+              <p className="text-sm font-semibold text-emerald-800 mb-1">
+                Payment link ready for {linkInfo.member} ({linkInfo.period})
+              </p>
+              <p className="text-xs text-emerald-700 mb-3 break-all">
+                <span className="font-mono">{linkInfo.payment_url}</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={whatsappHref(linkInfo)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold rounded-lg transition"
+                >
+                  Share via WhatsApp
+                </a>
+                <button
+                  onClick={() => navigator.clipboard && navigator.clipboard.writeText(linkInfo.payment_url)}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition"
+                >
+                  Copy Link
+                </button>
+              </div>
+              <button
+                onClick={() => setLinkInfo(null)}
+                className="mt-2 text-xs text-gray-500 hover:text-gray-700 underline"
+              >
+                Dismiss
+              </button>
             </div>
           )}
         </div>
