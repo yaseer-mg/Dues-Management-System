@@ -142,7 +142,7 @@ flips to PAID, and a second attempt for the same period is cleanly rejected.
    - Otherwise verify amount/currency/status directly with the gateway API
      (never trust the webhook payload alone), then update `payments.status`,
      `member_contributions.status = PAID`, `payment_links.status = USED`,
-     all in one transaction.
+     all in one transaction.  [x]
 7. Frontend: public payment page (token → member code entry → confirm →
    pay), Collector "Generate Link" action with WhatsApp share.
 

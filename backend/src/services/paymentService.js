@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { logAudit } = require('./auditService');
+const { getGateway } = require('./paymentGateway');
 
 // Records a CASH payment for a member_contribution, marking it PAID.
 //
@@ -90,4 +91,85 @@ async function recordCashPayment({ member_contribution_id, amount, recordedBy },
   return result;
 }
 
-module.exports = { recordCashPayment };
+// Process a gateway webhook event idempotently.
+//
+// 1. Signature is verified by the route BEFORE this runs (raw body + header).
+// 2. Look up the payments row by transaction_reference.
+// 3. If already SUCCESS, return success immediately and do nothing (idempotent).
+// 4. Otherwise verify amount/currency/status directly with the gateway (never
+//    trust the webhook payload), then, in one transaction, set:
+//      payments.status = SUCCESS
+//      member_contributions.status = PAID, paid_at = now
+//      payment_links.status = USED
+//    and write an audit log entry.
+async function processWebhookEvent({ reference, amount, currency }) {
+  const payment = await db('payments')
+    .where('transaction_reference', reference)
+    .first();
+
+  if (!payment) {
+    return { ok: true, ignored: 'unknown_reference' };
+  }
+  if (payment.status === 'SUCCESS') {
+    return { ok: true, ignored: 'already_success' };
+  }
+
+  // Verify directly with the gateway; never trust the webhook payload alone.
+  let verified;
+  try {
+    verified = await getGateway().verify({ reference });
+  } catch (err) {
+    const status = err.status || 502;
+    return { ok: false, status, message: `Gateway verification failed: ${err.message}` };
+  }
+  if (verified.status !== 'success') {
+    return { ok: true, ignored: `gateway_status_${verified.status}` };
+  }
+
+  // Confirm the gateway amount/currency match what we recorded.
+  if (currency && verified.currency && verified.currency !== currency) {
+    return { ok: false, status: 422, message: `Currency mismatch: ${verified.currency} vs ${currency}` };
+  }
+  const paymentKobo = Math.round(Number(payment.amount) * 100);
+  if (Number.isFinite(verified.amount) && verified.amount !== paymentKobo) {
+    return { ok: false, status: 422, message: `Amount mismatch: gateway ${verified.amount} vs recorded ${paymentKobo}` };
+  }
+
+  await db.transaction(async (trx) => {
+    await trx('payments').where('id', payment.id).update({ status: 'SUCCESS' });
+
+    const contribution = await trx('member_contributions')
+      .where('id', payment.member_contribution_id)
+      .first();
+
+    if (contribution) {
+      await trx('member_contributions')
+        .where('id', contribution.id)
+        .update({ status: 'PAID', paid_at: trx.fn.now() });
+
+      // Mark any PENDING payment links for this contribution as USED.
+      await trx('payment_links')
+        .where('member_contribution_id', contribution.id)
+        .where('status', 'PENDING')
+        .update({ status: 'USED' });
+    }
+
+    await logAudit({
+      trx,
+      user_id: null,
+      action: 'PAYMENT_COMPLETED',
+      entity: 'payment',
+      entity_id: payment.id,
+      metadata: {
+        member_contribution_id: payment.member_contribution_id,
+        amount: String(payment.amount),
+        method: payment.method,
+        reference: payment.transaction_reference,
+      },
+    });
+  });
+
+  return { ok: true, processed: 'success' };
+}
+
+module.exports = { recordCashPayment, processWebhookEvent };
