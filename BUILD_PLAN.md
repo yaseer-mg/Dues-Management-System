@@ -122,10 +122,10 @@ flips to PAID, and a second attempt for the same period is cleanly rejected.
 
 ## Phase 5 — Online Payments
 
-1. Migration: `payment_links` table (per `ARCHITECTURE.md` §5).
+1. Migration: `payment_links` table (per `ARCHITECTURE.md` §5).  [x]
 2. Endpoint: `POST /payment-links` — Collector only. Generates a random
    token (`crypto.randomBytes`), sets `expires_at` (+30 min), links to the
-   target `member_contribution_id`.
+   target `member_contribution_id`.  [x]
 3. Public endpoint: `GET /payment/:token` — returns period/amount info only
    if token is PENDING and not expired.
 4. Public endpoint: `POST /payment/:token/verify-member` — accepts a
