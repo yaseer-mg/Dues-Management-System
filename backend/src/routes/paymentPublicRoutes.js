@@ -1,6 +1,6 @@
 const express = require('express');
 const asyncHandler = require('../utils/asyncHandler');
-const { getPublicLink, verifyMember } = require('../services/paymentLinkService');
+const { getPublicLink, verifyMember, initiateOnlinePayment } = require('../services/paymentLinkService');
 
 const router = express.Router();
 
@@ -23,6 +23,17 @@ router.post('/payment/:token/verify-member', asyncHandler(async (req, res) => {
     return res.error(result.error.message, result.error.status);
   }
   return res.success(result.data, 'Member verified');
+}));
+
+// Public: initiate an online payment for the link, returning the gateway's
+// authorization_url for the member to complete payment.
+router.post('/payment/:token/pay', asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const result = await initiateOnlinePayment({ token });
+  if (result.error) {
+    return res.error(result.error.message, result.error.status);
+  }
+  return res.created(result.data, 'Payment initiated');
 }));
 
 module.exports = router;

@@ -134,7 +134,7 @@ flips to PAID, and a second attempt for the same period is cleanly rejected.
    in the future. On match, return member info for confirmation.  [x]
 5. Public endpoint: `POST /payment/:token/pay` — initiates a transaction
    with the payment gateway (Paystack/Flutterwave), creates a `payments` row
-   (status PENDING, method ONLINE).
+   (status PENDING, method ONLINE).  [x]
 6. Implement `POST /api/payments/webhook`:
    - Verify the gateway's signature before doing anything else.
    - Look up the `payments` row by `transaction_reference`.

@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const db = require('../config/database');
 const { logAudit } = require('./auditService');
+const { getGateway } = require('./paymentGateway');
 
 const LINK_TTL_MINUTES = 30;
 const MAX_ATTEMPTS = 5;
@@ -139,6 +140,118 @@ function buildPaymentUrl(token) {
   return `${base}/pay/${token}`;
 }
 
+// Public: initiate an online payment for a verified, PENDING, non-expired link.
+// Calls the gateway to initialize a transaction, then records a PENDING ONLINE
+// payment row with the gateway transaction_reference. Returns the gateway's
+// authorization_url so the frontend can redirect the member to pay.
+async function initiateOnlinePayment({ token }) {
+  const link = await db('payment_links').where('token', token).first();
+  if (!link) {
+    return { error: { status: 404, message: 'Payment link not found' } };
+  }
+  if (link.status !== 'PENDING') {
+    return { error: { status: 410, message: 'This payment link is no longer active' } };
+  }
+  if (!link.expires_at || new Date(link.expires_at).getTime() <= Date.now()) {
+    return { error: { status: 410, message: 'This payment link has expired' } };
+  }
+  if (link.locked_until && new Date(link.locked_until).getTime() > Date.now()) {
+    return { error: { status: 429, message: 'This link is temporarily locked. Try again later.' } };
+  }
+
+  const mc = await db('member_contributions')
+    .join('members', 'member_contributions.member_id', 'members.id')
+    .select(
+      'member_contributions.id as member_contribution_id',
+      'member_contributions.expected_amount',
+      'member_contributions.status',
+      'members.member_code',
+      'members.name as member_name'
+    )
+    .where('member_contributions.id', link.member_contribution_id)
+    .first();
+  if (!mc) {
+    return { error: { status: 404, message: 'Contribution not found' } };
+  }
+  if (mc.status === 'PAID') {
+    return { error: { status: 410, message: 'This contribution has already been paid' } };
+  }
+
+  const amount = Number(mc.expected_amount);
+
+  const result = await db.transaction(async (trx) => {
+    // Guard: only one PENDING online payment per contribution at a time, to
+    // avoid creating duplicate gateway transactions for the same period.
+    const existing = await trx('payments')
+      .where({ member_contribution_id: mc.member_contribution_id, method: 'ONLINE', status: 'PENDING' })
+      .first();
+    if (existing) {
+      return {
+        error: { status: 409, message: 'A payment is already pending for this contribution' },
+      };
+    }
+
+    const reference = `DM-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+    const email = `${mc.member_code.toLowerCase().replace(/[^a-z0-9]/g, '')}@member.dues.local`;
+
+    let init;
+    try {
+      init = await getGateway().initialize({
+        amount: Math.round(amount * 100),
+        reference,
+        email,
+        metadata: { member_contribution_id: mc.member_contribution_id },
+      });
+    } catch (err) {
+      // Gateway unreachable/declined; surface cleanly without recording a row.
+      return { error: { status: err.status || 502, message: err.message } };
+    }
+
+    const [paymentId] = await trx('payments').insert({
+      member_contribution_id: mc.member_contribution_id,
+      amount: String(amount.toFixed(2)),
+      method: 'ONLINE',
+      status: 'PENDING',
+      transaction_reference: init.reference || reference,
+    });
+
+    await logAudit({
+      trx,
+      user_id: null,
+      action: 'PAYMENT_INITIATED',
+      entity: 'payment',
+      entity_id: paymentId,
+      metadata: {
+        member_contribution_id: mc.member_contribution_id,
+        amount: String(amount.toFixed(2)),
+        method: 'ONLINE',
+        reference: init.reference || reference,
+        payment_link_id: link.id,
+      },
+    });
+
+    return {
+      data: {
+        authorization_url: init.authorization_url,
+        access_code: init.access_code || null,
+        reference: init.reference || reference,
+        amount: String(amount.toFixed(2)),
+      },
+    };
+  });
+
+  return result;
+}
+
+module.exports = {
+  createPaymentLink,
+  getPublicLink,
+  verifyMember,
+  initiateOnlinePayment,
+  LINK_TTL_MINUTES,
+  MAX_ATTEMPTS,
+};
+
 // Public: verify a member_code guess against the member targeted by the link.
 // On mismatch increment attempt_count; lock the link briefly once the limit is
 // hit. Reject while locked. On match return limited member info for
@@ -204,5 +317,3 @@ async function verifyMember({ token, member_code }) {
     },
   };
 }
-
-module.exports = { createPaymentLink, getPublicLink, verifyMember, LINK_TTL_MINUTES, MAX_ATTEMPTS };
