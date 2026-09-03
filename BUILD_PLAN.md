@@ -131,7 +131,7 @@ flips to PAID, and a second attempt for the same period is cleanly rejected.
 4. Public endpoint: `POST /payment/:token/verify-member` — accepts a
    `member_code` guess. On mismatch, increment `attempt_count`; if it hits
    the limit, set `locked_until`. Reject any attempt while `locked_until` is
-   in the future. On match, return member info for confirmation.
+   in the future. On match, return member info for confirmation.  [x]
 5. Public endpoint: `POST /payment/:token/pay` — initiates a transaction
    with the payment gateway (Paystack/Flutterwave), creates a `payments` row
    (status PENDING, method ONLINE).
