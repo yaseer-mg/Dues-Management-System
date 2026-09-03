@@ -110,7 +110,7 @@ twice for the same month does not duplicate rows.
 - [x] 4. Rely on the `UNIQUE(member_id, contribution_period_id)` constraint to
    reject a second payment attempt for an already-PAID period; surface a
    clean error message on that constraint violation.
-5. Write an `audit_logs` entry for the payment (see Phase 7 table, but you
+- [x] 5. Write an `audit_logs` entry for the payment (see Phase 7 table, but you
    can create the table now and start writing to it here).
 6. Frontend: Collector dashboard — search member, select unpaid period,
    confirm payment.

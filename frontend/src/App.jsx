@@ -8,6 +8,7 @@ import OrgList from './pages/OrgList';
 import Members from './pages/Members';
 import ManagePeriods from './pages/ManagePeriods';
 import MemberContributions from './pages/MemberContributions';
+import CollectCash from './pages/CollectCash';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/members" element={<Members />} />
             <Route path="/members/:id/contributions" element={<MemberContributions />} />
             <Route path="/periods" element={<ManagePeriods />} />
+            <Route path="/collect" element={<CollectCash />} />
             <Route path="/zones" element={<OrgList title="Zones" endpoint="/api/zones" />} />
             <Route path="/units" element={<OrgList title="Units" endpoint="/api/units" />} />
             <Route path="/sub-units" element={<OrgList title="Sub-Units" endpoint="/api/sub-units" />} />

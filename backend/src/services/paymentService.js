@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { logAudit } = require('./auditService');
 
 // Records a CASH payment for a member_contribution, marking it PAID.
 //
@@ -63,6 +64,20 @@ async function recordCashPayment({ member_contribution_id, amount, recordedBy },
     await trx('member_contributions')
       .where('id', contribution.id)
       .update({ status: 'PAID', paid_at: trx.fn.now() });
+
+    await logAudit({
+      trx,
+      user_id: recordedBy.user_id,
+      action: 'PAYMENT_CREATED',
+      entity: 'payment',
+      entity_id: paymentId,
+      metadata: {
+        member_contribution_id: contribution.id,
+        member_id: contribution.member_id,
+        amount: String(amountNum.toFixed(2)),
+        method: 'CASH',
+      },
+    });
 
     const payment = await trx('payments').where('id', paymentId).first();
     const contributionRow = await trx('member_contributions')
