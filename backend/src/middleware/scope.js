@@ -78,10 +78,12 @@ function scopeMiddleware(req, res, next) {
         query.where(cond.column, cond.value);
       } else if (cond.type === 'whereInSubquery') {
         query.whereIn(cond.column, function () {
-          const sub = this.select(cond.subColumn).from(cond.table).where(cond.where);
+          const sub = this.select(cond.subColumn).from(cond.table);
+          if (cond.where && Object.keys(cond.where).length) sub.where(cond.where);
           if (cond.whereIn) {
             sub.whereIn(cond.whereIn.column, function () {
-              this.select(cond.whereIn.subColumn).from(cond.whereIn.table).where(cond.whereIn.where);
+              const inner = this.select(cond.whereIn.subColumn).from(cond.whereIn.table);
+              if (cond.whereIn.where && Object.keys(cond.whereIn.where).length) inner.where(cond.whereIn.where);
             });
           }
         });

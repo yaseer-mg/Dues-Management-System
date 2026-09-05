@@ -158,7 +158,7 @@ not two.
 2. On any payment reaching SUCCESS (cash or online), generate a receipt:
    unique `receipt_number`, unique `verification_code`, PDF with QR code
    linking to the public verification page.  [x]
-3. Endpoint: `GET /receipts/:payment_id` (staff/member-facing download).
+3. Endpoint: `GET /receipts/:payment_id` (staff/member-facing download).  [x]
 4. Public endpoint: `GET /receipt/verify/:verification_code` — returns only
    limited fields (member code, amount, period, date, method, status) —
    never full member profile.
