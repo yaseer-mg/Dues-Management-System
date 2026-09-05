@@ -162,7 +162,7 @@ not two.
 4. Public endpoint: `GET /receipt/verify/:verification_code` — returns only
    limited fields (member code, amount, period, date, method, status) —
    never full member profile.  [x]
-5. Optional: send receipt link via WhatsApp/SMS after generation.
+5. Optional: send receipt link via WhatsApp/SMS after generation.  [x]
 6. Frontend: receipt view/download, public verification page.
 
 **Done when:** every SUCCESS payment has exactly one receipt, and the public

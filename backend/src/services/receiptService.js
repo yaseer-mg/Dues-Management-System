@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
 const db = require('../config/database');
+const { sendReceiptNotification } = require('./notificationService');
 
 // Creates a receipt row for a SUCCESS payment inside the caller's transaction.
 // Called from both the cash and online payment paths the moment a payment
@@ -31,6 +32,16 @@ async function createReceiptForPayment({ trx, paymentId }) {
 function verificationUrl(verificationCode) {
   const base = process.env.PAYMENT_BASE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
   return `${base}/receipt/verify/${verificationCode}`;
+}
+
+// Best-effort receipt link delivery after the payment transaction commits.
+async function notifyReceipt({ phone, memberName, receipt }) {
+  return sendReceiptNotification({
+    phone,
+    memberName,
+    receiptNumber: receipt.receipt_number,
+    verificationUrl: verificationUrl(receipt.verification_code),
+  });
 }
 
 // Loads full receipt details (payment, member, contribution period, method).
@@ -121,4 +132,4 @@ async function generateReceiptPdf(receiptNumberOrCode) {
   });
 }
 
-module.exports = { createReceiptForPayment, generateReceiptPdf, verificationUrl };
+module.exports = { createReceiptForPayment, generateReceiptPdf, verificationUrl, notifyReceipt };

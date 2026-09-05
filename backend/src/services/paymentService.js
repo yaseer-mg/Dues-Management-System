@@ -1,7 +1,7 @@
 const db = require('../config/database');
 const { logAudit } = require('./auditService');
 const { getGateway } = require('./paymentGateway');
-const { createReceiptForPayment } = require('./receiptService');
+const { createReceiptForPayment, notifyReceipt } = require('./receiptService');
 
 // Records a CASH payment for a member_contribution, marking it PAID.
 //
@@ -91,6 +91,22 @@ async function recordCashPayment({ member_contribution_id, amount, recordedBy },
     return { data: { payment, contribution: contributionRow, receipt } };
   });
 
+  // Best-effort receipt link delivery AFTER the transaction commits, so a
+  // notification failure can never fail the payment.
+  if (result && result.data && result.data.receipt) {
+    try {
+      const member = await db('members')
+        .where('id', result.data.contribution.member_id)
+        .select('name', 'phone')
+        .first();
+      if (member) {
+        await notifyReceipt({ phone: member.phone, memberName: member.name, receipt: result.data.receipt });
+      }
+    } catch (err) {
+      console.error('[notify] receipt notification failed:', err.message);
+    }
+  }
+
   return result;
 }
 
@@ -173,6 +189,23 @@ async function processWebhookEvent({ reference, amount, currency }) {
 
     await createReceiptForPayment({ trx, paymentId: payment.id });
   });
+
+  // Best-effort receipt link delivery AFTER the transaction commits.
+  try {
+    const member = await db('members')
+      .join('member_contributions', 'member_contributions.member_id', 'members.id')
+      .where('member_contributions.id', payment.member_contribution_id)
+      .select('members.name', 'members.phone')
+      .first();
+    if (member) {
+      const receipt = await db('receipts').where('payment_id', payment.id).first();
+      if (receipt) {
+        await notifyReceipt({ phone: member.phone, memberName: member.name, receipt });
+      }
+    }
+  } catch (err) {
+    console.error('[notify] receipt notification failed:', err.message);
+  }
 
   return { ok: true, processed: 'success' };
 }
