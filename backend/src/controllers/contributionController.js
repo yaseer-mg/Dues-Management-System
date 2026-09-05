@@ -47,7 +47,13 @@ const getMemberContributions = asyncHandler(async (req, res) => {
       'member_contributions.status',
       'member_contributions.paid_at',
       'contribution_periods.month',
-      'contribution_periods.year'
+      'contribution_periods.year',
+      db.raw(
+        "(SELECT payments.id FROM payments WHERE payments.member_contribution_id = member_contributions.id AND payments.status = 'SUCCESS' ORDER BY payments.id DESC LIMIT 1) AS payment_id"
+      ),
+      db.raw(
+        "(SELECT receipts.receipt_number FROM receipts JOIN payments ON payments.id = receipts.payment_id WHERE payments.member_contribution_id = member_contributions.id AND payments.status = 'SUCCESS' ORDER BY receipts.id DESC LIMIT 1) AS receipt_number"
+      )
     )
     .where('member_contributions.member_id', id)
     .orderBy([

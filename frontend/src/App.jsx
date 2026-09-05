@@ -10,6 +10,7 @@ import ManagePeriods from './pages/ManagePeriods';
 import MemberContributions from './pages/MemberContributions';
 import CollectCash from './pages/CollectCash';
 import PayLink from './pages/PayLink';
+import ReceiptVerify from './pages/ReceiptVerify';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/pay/:token" element={<PayLink />} />
+          <Route path="/receipt/verify/:verification_code" element={<ReceiptVerify />} />
           <Route
             element={
               <ProtectedRoute>

@@ -163,7 +163,7 @@ not two.
    limited fields (member code, amount, period, date, method, status) —
    never full member profile.  [x]
 5. Optional: send receipt link via WhatsApp/SMS after generation.  [x]
-6. Frontend: receipt view/download, public verification page.
+6. Frontend: receipt view/download, public verification page.  [x]
 
 **Done when:** every SUCCESS payment has exactly one receipt, and the public
 verification page never exposes more than the limited field set.

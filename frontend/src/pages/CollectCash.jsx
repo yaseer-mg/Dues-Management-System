@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import ReceiptModal from '../components/ReceiptModal';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -30,6 +31,9 @@ export default function CollectCash() {
 
   const [linkInfo, setLinkInfo] = useState(null); // { token, payment_url, amount, period }
   const [generatingId, setGeneratingId] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [viewing, setViewing] = useState(null); // { url, name } receipt being previewed
+  const [openingId, setOpeningId] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -121,6 +125,51 @@ export default function CollectCash() {
       `Hello ${info.member}, please pay your dues of ₦${Number(info.amount).toLocaleString()} for ${info.period} using this secure link: ${info.payment_url}`
     );
     return `https://wa.me/?text=${text}`;
+  };
+
+  const downloadReceipt = async (paymentId) => {
+    setDownloadingId(paymentId);
+    setPayError('');
+    try {
+      const res = await api.get(`/api/receipts/${paymentId}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(res.data);
+      const cd = res.headers['content-disposition'] || '';
+      const m = cd.match(/filename="?([^";]+)"?/);
+      const name = (m && m[1]) || `receipt-${paymentId}.pdf`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setPayError(err.response?.data?.message || 'Could not download receipt');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const viewReceipt = async (paymentId) => {
+    setOpeningId(paymentId);
+    setPayError('');
+    try {
+      const res = await api.get(`/api/receipts/${paymentId}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(res.data);
+      const cd = res.headers['content-disposition'] || '';
+      const m = cd.match(/filename="?([^";]+)"?/);
+      const name = (m && m[1]) || `receipt-${paymentId}.pdf`;
+      setViewing({ url, name });
+    } catch (err) {
+      setPayError(err.response?.data?.message || 'Could not open receipt');
+    } finally {
+      setOpeningId(null);
+    }
+  };
+
+  const closeViewer = () => {
+    if (viewing) window.URL.revokeObjectURL(viewing.url);
+    setViewing(null);
   };
 
   const inputCls =
@@ -233,6 +282,23 @@ export default function CollectCash() {
                               </button>
                             )}
                           </div>
+                        ) : c.payment_id ? (
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => viewReceipt(c.payment_id)}
+                              disabled={openingId === c.payment_id}
+                              className="px-3 py-1.5 border border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:opacity-60 text-xs font-semibold rounded-lg transition"
+                            >
+                              {openingId === c.payment_id ? 'Opening...' : 'View'}
+                            </button>
+                            <button
+                              onClick={() => downloadReceipt(c.payment_id)}
+                              disabled={downloadingId === c.payment_id}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition"
+                            >
+                              {downloadingId === c.payment_id ? 'Downloading...' : 'Receipt'}
+                            </button>
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-400">paid</span>
                         )}
@@ -278,6 +344,8 @@ export default function CollectCash() {
           )}
         </div>
       )}
+
+      <ReceiptModal title={viewing?.name} url={viewing?.url} onClose={closeViewer} />
     </div>
   );
 }
