@@ -1,6 +1,7 @@
 const express = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const { getPublicLink, verifyMember, initiateOnlinePayment } = require('../services/paymentLinkService');
+const { verifyReceipt } = require('../controllers/receiptController');
 
 const router = express.Router();
 
@@ -35,5 +36,8 @@ router.post('/payment/:token/pay', asyncHandler(async (req, res) => {
   }
   return res.created(result.data, 'Payment initiated');
 }));
+
+// Public: verify a receipt by its verification code (limited field set).
+router.get('/receipt/verify/:verification_code', verifyReceipt);
 
 module.exports = router;
