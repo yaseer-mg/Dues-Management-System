@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const asyncHandler = require('../utils/asyncHandler');
+const { logAudit } = require('../services/auditService');
 
 const createCategory = asyncHandler(async (req, res) => {
   const { name, amount } = req.body;
@@ -17,6 +18,14 @@ const createCategory = asyncHandler(async (req, res) => {
       amount: Number(amount).toFixed(2),
     });
     const category = await db('contribution_categories').where('id', id).first();
+    await logAudit({
+      trx: db,
+      user_id: req.user.user_id,
+      action: 'CATEGORY_CREATED',
+      entity: 'contribution_category',
+      entity_id: id,
+      metadata: { name, amount: category.amount },
+    });
     return res.created(category, 'Category created');
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -75,6 +84,15 @@ const updateCategory = asyncHandler(async (req, res) => {
     throw err;
   }
 
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'CATEGORY_UPDATED',
+    entity: 'contribution_category',
+    entity_id: Number(id),
+    metadata: { changes: updates },
+  });
+
   const category = await db('contribution_categories').where('id', id).first();
   return res.success(category, 'Category updated');
 });
@@ -85,6 +103,14 @@ const deleteCategory = asyncHandler(async (req, res) => {
   if (!exists) return res.error('Category not found', 404);
 
   await db('contribution_categories').where('id', id).del();
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'CATEGORY_DELETED',
+    entity: 'contribution_category',
+    entity_id: Number(id),
+    metadata: { name: exists.name },
+  });
   return res.success(null, 'Category deleted');
 });
 

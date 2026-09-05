@@ -172,10 +172,10 @@ verification page never exposes more than the limited field set.
 
 ## Phase 7 — Refunds & Audit
 
-1. Migration: `audit_logs` table (if not already created in Phase 4).
+1. Migration: `audit_logs` table (if not already created in Phase 4).  [x]
 2. Ensure every prior write path (member create/edit, payment, link
    generation, login) writes an audit entry — retrofit any that were
-   skipped.
+   skipped.  [x]
 3. Endpoint: `POST /payments/:id/refund` — Central Management only. In one
    transaction: set `payments.status = REFUNDED`, `refunded_by`,
    `refunded_at`; set the linked `member_contributions.status = UNPAID`;

@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const asyncHandler = require('../utils/asyncHandler');
 const { openContributionPeriod } = require('../services/contributionService');
+const { logAudit } = require('../services/auditService');
 
 const createContributionPeriod = asyncHandler(async (req, res) => {
   const { month, year } = req.body;
@@ -11,6 +12,14 @@ const createContributionPeriod = asyncHandler(async (req, res) => {
 
   try {
     const { period, memberCount } = await openContributionPeriod({ month, year });
+    await logAudit({
+      trx: db,
+      user_id: req.user.user_id,
+      action: 'PERIOD_OPENED',
+      entity: 'contribution_period',
+      entity_id: period.id,
+      metadata: { month: period.month, year: period.year, members: memberCount },
+    });
     return res.created({
       period,
       member_contributions_created: memberCount,

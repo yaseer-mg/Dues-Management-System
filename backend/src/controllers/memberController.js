@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const asyncHandler = require('../utils/asyncHandler');
 const { createMemberWithCode } = require('../utils/memberCode');
+const { logAudit } = require('../services/auditService');
 
 const createMember = asyncHandler(async (req, res) => {
   const { name, phone, gender, date_of_birth, contribution_category_id } = req.body;
@@ -37,6 +38,19 @@ const createMember = asyncHandler(async (req, res) => {
     contribution_category_id,
     sub_unit_id: req.user.sub_unit_id,
     registered_by: req.user.user_id,
+  });
+
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'MEMBER_CREATED',
+    entity: 'member',
+    entity_id: member.id,
+    metadata: {
+      member_code: member.member_code,
+      name: member.name,
+      sub_unit_id: req.user.sub_unit_id,
+    },
   });
 
   return res.created(member, 'Member registered');
@@ -141,6 +155,19 @@ const updateMember = asyncHandler(async (req, res) => {
   }
 
   await db('members').where('id', id).update(updates);
+
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'MEMBER_UPDATED',
+    entity: 'member',
+    entity_id: Number(id),
+    metadata: {
+      member_code: existing.member_code,
+      changes: updates,
+    },
+  });
+
   const member = await db('members').where('id', id).first();
   return res.success(member, 'Member updated');
 });

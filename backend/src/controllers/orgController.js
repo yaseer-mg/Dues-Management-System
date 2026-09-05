@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const asyncHandler = require('../utils/asyncHandler');
+const { logAudit } = require('../services/auditService');
 
 // ---------- Zones ----------
 
@@ -11,6 +12,14 @@ const createZone = asyncHandler(async (req, res) => {
 
   try {
     const [id] = await db('zones').insert({ serial_number, name });
+    await logAudit({
+      trx: db,
+      user_id: req.user.user_id,
+      action: 'ZONE_CREATED',
+      entity: 'zone',
+      entity_id: id,
+      metadata: { serial_number, name },
+    });
     return res.created({ id, serial_number, name }, 'Zone created');
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -54,6 +63,14 @@ const updateZone = asyncHandler(async (req, res) => {
   }
 
   await db('zones').where('id', id).update(updates);
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'ZONE_UPDATED',
+    entity: 'zone',
+    entity_id: Number(id),
+    metadata: { changes: updates },
+  });
   const zone = await db('zones').where('id', id).first();
   return res.success(zone, 'Zone updated');
 });
@@ -71,6 +88,14 @@ const createUnit = asyncHandler(async (req, res) => {
 
   try {
     const [id] = await db('units').insert({ zone_id, serial_number, name });
+    await logAudit({
+      trx: db,
+      user_id: req.user.user_id,
+      action: 'UNIT_CREATED',
+      entity: 'unit',
+      entity_id: id,
+      metadata: { zone_id, serial_number, name },
+    });
     return res.created({ id, zone_id, serial_number, name }, 'Unit created');
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -114,6 +139,14 @@ const updateUnit = asyncHandler(async (req, res) => {
   }
 
   await db('units').where('id', id).update(updates);
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'UNIT_UPDATED',
+    entity: 'unit',
+    entity_id: Number(id),
+    metadata: { changes: updates },
+  });
   const unit = await db('units').where('id', id).first();
   return res.success(unit, 'Unit updated');
 });
@@ -131,6 +164,14 @@ const createSubUnit = asyncHandler(async (req, res) => {
 
   try {
     const [id] = await db('sub_units').insert({ unit_id, serial_number, name });
+    await logAudit({
+      trx: db,
+      user_id: req.user.user_id,
+      action: 'SUB_UNIT_CREATED',
+      entity: 'sub_unit',
+      entity_id: id,
+      metadata: { unit_id, serial_number, name },
+    });
     return res.created({ id, unit_id, serial_number, name }, 'Sub-Unit created');
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -174,6 +215,14 @@ const updateSubUnit = asyncHandler(async (req, res) => {
   }
 
   await db('sub_units').where('id', id).update(updates);
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'SUB_UNIT_UPDATED',
+    entity: 'sub_unit',
+    entity_id: Number(id),
+    metadata: { changes: updates },
+  });
   const subUnit = await db('sub_units').where('id', id).first();
   return res.success(subUnit, 'Sub-Unit updated');
 });
