@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const { logAudit } = require('./auditService');
 const { getGateway } = require('./paymentGateway');
+const { createReceiptForPayment } = require('./receiptService');
 
 // Records a CASH payment for a member_contribution, marking it PAID.
 //
@@ -80,12 +81,14 @@ async function recordCashPayment({ member_contribution_id, amount, recordedBy },
       },
     });
 
+    const receipt = await createReceiptForPayment({ trx, paymentId });
+
     const payment = await trx('payments').where('id', paymentId).first();
     const contributionRow = await trx('member_contributions')
       .where('id', contribution.id)
       .first();
 
-    return { data: { payment, contribution: contributionRow } };
+    return { data: { payment, contribution: contributionRow, receipt } };
   });
 
   return result;
@@ -167,6 +170,8 @@ async function processWebhookEvent({ reference, amount, currency }) {
         reference: payment.transaction_reference,
       },
     });
+
+    await createReceiptForPayment({ trx, paymentId: payment.id });
   });
 
   return { ok: true, processed: 'success' };
