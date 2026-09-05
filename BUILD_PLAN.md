@@ -154,7 +154,7 @@ not two.
 
 ## Phase 6 — Receipts
 
-1. Migration: `receipts` table.
+1. Migration: `receipts` table.  [x]
 2. On any payment reaching SUCCESS (cash or online), generate a receipt:
    unique `receipt_number`, unique `verification_code`, PDF with QR code
    linking to the public verification page.
