@@ -1,5 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { recordCashPayment, processWebhookEvent } = require('../services/paymentService');
+const { recordCashPayment, processWebhookEvent, refundPayment } = require('../services/paymentService');
 const { getGateway } = require('../services/paymentGateway');
 
 const recordCash = asyncHandler(async (req, res) => {
@@ -28,6 +28,28 @@ const recordCash = asyncHandler(async (req, res) => {
   }
 
   return res.created(result.data, 'Cash payment recorded');
+});
+
+// POST /payments/:id/refund — Central Management only (enforced at the route).
+const refund = asyncHandler(async (req, res) => {
+  const paymentId = Number(req.params.id);
+  if (!Number.isInteger(paymentId) || paymentId <= 0) {
+    return res.error('Invalid payment id', 400);
+  }
+
+  const reason = (req.body && req.body.reason) || null;
+
+  const result = await refundPayment({
+    payment_id: paymentId,
+    reason,
+    refundedBy: req.user.user_id,
+  });
+
+  if (result.error) {
+    return res.error(result.error.message, result.error.status);
+  }
+
+  return res.success(result.data, 'Payment refunded');
 });
 
 // Webhook handler. The route feeds this an express.raw() body so the raw bytes
@@ -63,4 +85,4 @@ const handleWebhook = async (req, res) => {
   return res.status(200).json({ success: true, ignored: result.ignored || null });
 };
 
-module.exports = { recordCash, handleWebhook };
+module.exports = { recordCash, handleWebhook, refund };

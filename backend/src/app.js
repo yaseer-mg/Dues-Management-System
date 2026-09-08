@@ -73,6 +73,15 @@ app.use('/', paymentPublicRoutes);
 const receiptRoutes = require('./routes/receiptRoutes');
 app.use('/api', receiptRoutes);
 
+const dashboardRoutes = require('./routes/dashboardRoutes');
+app.use('/api', dashboardRoutes);
+
+const reportRoutes = require('./routes/reportRoutes');
+app.use('/api', reportRoutes);
+
+const branchRoutes = require('./routes/branchRoutes');
+app.use('/api', branchRoutes);
+
 app.use((err, req, res, next) => {
   console.error(err);
   const status = err.status || 500;

@@ -210,4 +210,55 @@ async function processWebhookEvent({ reference, amount, currency }) {
   return { ok: true, processed: 'success' };
 }
 
-module.exports = { recordCashPayment, processWebhookEvent };
+// Refund a SUCCESS payment (Central Management). One transaction:
+//   payments.status = REFUNDED + refunded_by + refunded_at
+//   member_contributions.status = UNPAID, paid_at = null (payable again)
+//   audit entry with the reason
+// The payment row is never deleted — history is preserved.
+async function refundPayment({ payment_id, reason, refundedBy }) {
+  return db.transaction(async (trx) => {
+    const payment = await trx('payments')
+      .where('id', payment_id)
+      .forUpdate()
+      .first();
+
+    if (!payment) {
+      return { error: { status: 404, message: 'Payment not found' } };
+    }
+    if (payment.status !== 'SUCCESS') {
+      return { error: { status: 409, message: `Only SUCCESS payments can be refunded (current status: ${payment.status})` } };
+    }
+    if (payment.refunded_at) {
+      return { error: { status: 409, message: 'Payment already refunded' } };
+    }
+
+    await trx('payments').where('id', payment.id).update({
+      status: 'REFUNDED',
+      refunded_by: refundedBy,
+      refunded_at: trx.fn.now(),
+    });
+
+    await trx('member_contributions')
+      .where('id', payment.member_contribution_id)
+      .update({ status: 'UNPAID', paid_at: null });
+
+    await logAudit({
+      trx,
+      user_id: refundedBy,
+      action: 'PAYMENT_REFUNDED',
+      entity: 'payment',
+      entity_id: payment.id,
+      metadata: {
+        member_contribution_id: payment.member_contribution_id,
+        amount: String(payment.amount),
+        method: payment.method,
+        reason: reason || null,
+      },
+    });
+
+    const refundedPayment = await trx('payments').where('id', payment.id).first();
+    return { data: { payment: refundedPayment } };
+  });
+}
+
+module.exports = { recordCashPayment, processWebhookEvent, refundPayment };

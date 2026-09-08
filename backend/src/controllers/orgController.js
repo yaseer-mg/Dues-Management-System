@@ -106,10 +106,17 @@ const createUnit = asyncHandler(async (req, res) => {
 });
 
 const listUnits = asyncHandler(async (req, res) => {
-  const units = await req.scope.query(
-    db('units').select('units.*').orderBy('units.name'),
-    'units'
-  );
+  const { zone_id } = req.query;
+  if (zone_id !== undefined && (!Number.isInteger(Number(zone_id)) || Number(zone_id) <= 0)) {
+    return res.error('zone_id must be a positive integer', 400);
+  }
+
+  let query = db('units').select('units.*').orderBy('units.name');
+  if (zone_id !== undefined) {
+    query = query.where('units.zone_id', Number(zone_id));
+  }
+  query = req.scope.query(query, 'units');
+  const units = await query;
   return res.success(units);
 });
 
@@ -182,10 +189,17 @@ const createSubUnit = asyncHandler(async (req, res) => {
 });
 
 const listSubUnits = asyncHandler(async (req, res) => {
-  const subUnits = await req.scope.query(
-    db('sub_units').select('sub_units.*').orderBy('sub_units.name'),
-    'sub_units'
-  );
+  const { unit_id } = req.query;
+  if (unit_id !== undefined && (!Number.isInteger(Number(unit_id)) || Number(unit_id) <= 0)) {
+    return res.error('unit_id must be a positive integer', 400);
+  }
+
+  let query = db('sub_units').select('sub_units.*').orderBy('sub_units.name');
+  if (unit_id !== undefined) {
+    query = query.where('sub_units.unit_id', Number(unit_id));
+  }
+  query = req.scope.query(query, 'sub_units');
+  const subUnits = await query;
   return res.success(subUnits);
 });
 

@@ -14,4 +14,6 @@ router.use(authenticate);
 
 router.post('/payments/cash', authorize('Collector'), paymentController.recordCash);
 
+router.post('/payments/:id/refund', authorize('Central Management'), paymentController.refund);
+
 module.exports = router;

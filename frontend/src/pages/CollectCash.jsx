@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import ReceiptModal from '../components/ReceiptModal';
@@ -13,6 +14,7 @@ const periodLabel = (c) => `${MONTHS[c.month - 1]} ${c.year}`;
 export default function CollectCash() {
   const { user } = useAuth();
   const isCollector = user?.role === 'Collector';
+  const [searchParams] = useSearchParams();
 
   const [search, setSearch] = useState('');
   const [results, setResults] = useState([]);
@@ -34,6 +36,22 @@ export default function CollectCash() {
   const [downloadingId, setDownloadingId] = useState(null);
   const [viewing, setViewing] = useState(null); // { url, name } receipt being previewed
   const [openingId, setOpeningId] = useState(null);
+
+  // Quick action from the dashboard: /collect?member=<code> pre-selects the member.
+  useEffect(() => {
+    const memberCode = searchParams.get('member');
+    if (memberCode) {
+      setSearch(memberCode);
+      api
+        .get('/api/members', { params: { search: memberCode } })
+        .then((res) => {
+          const list = res.data.data || [];
+          if (list.length) selectMember(list[0]);
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/client';
 import ReceiptModal from '../components/ReceiptModal';
+import { useAuth } from '../context/AuthContext';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -10,6 +11,8 @@ const MONTHS = [
 
 export default function MemberContributions() {
   const { id } = useParams();
+  const { user } = useAuth();
+  const isCentral = user?.role === 'Central Management';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,6 +20,10 @@ export default function MemberContributions() {
   const [dlError, setDlError] = useState('');
   const [viewing, setViewing] = useState(null); // { url, name } receipt being previewed
   const [openingId, setOpeningId] = useState(null);
+  const [refundTarget, setRefundTarget] = useState(null); // contribution pending refund confirmation
+  const [refundReason, setRefundReason] = useState('');
+  const [refunding, setRefunding] = useState(false);
+  const [refundError, setRefundError] = useState('');
 
   useEffect(() => {
     reload();
@@ -80,6 +87,43 @@ export default function MemberContributions() {
     if (viewing) window.URL.revokeObjectURL(viewing.url);
     setViewing(null);
   };
+
+  const startRefund = (c) => {
+    setRefundTarget(c);
+    setRefundReason('');
+    setRefundError('');
+  };
+
+  const cancelRefund = () => {
+    if (!refunding) {
+      setRefundTarget(null);
+      setRefundReason('');
+      setRefundError('');
+    }
+  };
+
+  const confirmRefund = async () => {
+    if (!refundTarget) return;
+    const reason = refundReason.trim();
+    if (!reason) {
+      setRefundError('Please provide a reason for the refund');
+      return;
+    }
+    setRefunding(true);
+    setRefundError('');
+    try {
+      await api.post(`/api/payments/${refundTarget.payment_id}/refund`, { reason });
+      setRefunding(false);
+      setRefundTarget(null);
+      setRefundReason('');
+      reload();
+    } catch (err) {
+      setRefunding(false);
+      setRefundError(err.response?.data?.message || 'Refund failed');
+    }
+  };
+
+  const periodLabel = (c) => `${MONTHS[c.month - 1]} ${c.year}`;
 
   if (loading) return <p className="text-gray-400">Loading...</p>;
   if (error) return <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg px-3 py-2 text-sm">{error}</div>;
@@ -160,6 +204,14 @@ export default function MemberContributions() {
                           >
                             {downloadingId === c.payment_id ? 'Downloading...' : 'Receipt'}
                           </button>
+                          {isCentral ? (
+                            <button
+                              onClick={() => startRefund(c)}
+                              className="px-3 py-1.5 border border-red-300 text-red-700 hover:bg-red-50 text-xs font-semibold rounded-lg transition"
+                            >
+                              Refund
+                            </button>
+                          ) : null}
                         </div>
                       ) : null}
                     </td>
@@ -172,6 +224,46 @@ export default function MemberContributions() {
       )}
 
       <ReceiptModal title={viewing?.name} url={viewing?.url} onClose={closeViewer} />
+
+      {refundTarget ? (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-emerald-900">Refund payment?</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              This will refund the <span className="font-semibold">₦{Number(refundTarget.expected_amount).toLocaleString()}</span> payment for{' '}
+              <span className="font-semibold">{periodLabel(refundTarget)}</span>. The contribution returns to UNPAID and the payment is kept
+              in history with a REFUNDED status.
+            </p>
+            <label className="block mt-4 text-sm font-semibold text-slate-700">
+              Reason <span className="text-red-500">*</span>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                rows={3}
+                placeholder="Why is this payment being refunded?"
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </label>
+            {refundError && <div className="mt-3 bg-red-50 text-red-600 border border-red-200 rounded-lg px-3 py-2 text-sm">{refundError}</div>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={cancelRefund}
+                disabled={refunding}
+                className="px-4 py-2 border border-gray-300 text-gray-600 hover:bg-gray-50 disabled:opacity-60 text-sm font-semibold rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRefund}
+                disabled={refunding}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-sm font-semibold rounded-lg transition"
+              >
+                {refunding ? 'Refunding...' : 'Confirm Refund'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

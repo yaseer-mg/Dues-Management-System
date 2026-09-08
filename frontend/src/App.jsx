@@ -11,6 +11,8 @@ import MemberContributions from './pages/MemberContributions';
 import CollectCash from './pages/CollectCash';
 import PayLink from './pages/PayLink';
 import ReceiptVerify from './pages/ReceiptVerify';
+import Reports from './pages/Reports';
+import BranchSummary from './pages/BranchSummary';
 
 export default function App() {
   return (
@@ -35,6 +37,8 @@ export default function App() {
             <Route path="/zones" element={<OrgList title="Zones" endpoint="/api/zones" />} />
             <Route path="/units" element={<OrgList title="Units" endpoint="/api/units" />} />
             <Route path="/sub-units" element={<OrgList title="Sub-Units" endpoint="/api/sub-units" />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/branches" element={<BranchSummary />} />
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

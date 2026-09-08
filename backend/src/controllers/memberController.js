@@ -57,9 +57,18 @@ const createMember = asyncHandler(async (req, res) => {
 });
 
 const listMembers = asyncHandler(async (req, res) => {
-  const { search } = req.query;
+  const { search, zone_id, unit_id, sub_unit_id } = req.query;
+
+  for (const [name, value] of [['zone_id', zone_id], ['unit_id', unit_id], ['sub_unit_id', sub_unit_id]]) {
+    if (value !== undefined && (!Number.isInteger(Number(value)) || Number(value) <= 0)) {
+      return res.error(`${name} must be a positive integer`, 400);
+    }
+  }
 
   let query = db('members')
+    .leftJoin('sub_units', 'sub_units.id', 'members.sub_unit_id')
+    .leftJoin('units', 'units.id', 'sub_units.unit_id')
+    .leftJoin('zones', 'zones.id', 'units.zone_id')
     .leftJoin('contribution_categories', 'members.contribution_category_id', 'contribution_categories.id')
     .select(
       'members.id',
@@ -72,6 +81,11 @@ const listMembers = asyncHandler(async (req, res) => {
       'members.sub_unit_id',
       'members.registered_at',
       'members.registered_by',
+      'sub_units.name as sub_unit_name',
+      'units.id as unit_id',
+      'units.name as unit_name',
+      'zones.id as zone_id',
+      'zones.name as zone_name',
       'contribution_categories.id as category_id',
       'contribution_categories.name as category_name',
       'contribution_categories.amount as category_amount'
@@ -84,6 +98,20 @@ const listMembers = asyncHandler(async (req, res) => {
     query.where(function () {
       this.where('members.name', 'like', term)
         .orWhere('members.member_code', 'like', term);
+    });
+  }
+
+  if (sub_unit_id !== undefined) {
+    query.where('members.sub_unit_id', Number(sub_unit_id));
+  } else if (unit_id !== undefined) {
+    query.whereIn('members.sub_unit_id', function () {
+      this.select('id').from('sub_units').where('unit_id', Number(unit_id));
+    });
+  } else if (zone_id !== undefined) {
+    query.whereIn('members.sub_unit_id', function () {
+      this.select('id').from('sub_units').whereIn('unit_id', function () {
+        this.select('id').from('units').where('zone_id', Number(zone_id));
+      });
     });
   }
 

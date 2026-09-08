@@ -109,10 +109,10 @@ twice for the same month does not duplicate rows.
    `paid_at = now()` → all inside one DB transaction.
 - [x] 4. Rely on the `UNIQUE(member_id, contribution_period_id)` constraint to
    reject a second payment attempt for an already-PAID period; surface a
-   clean error message on that constraint violation.
+clean error message on that constraint violation.
 - [x] 5. Write an `audit_logs` entry for the payment (see Phase 7 table, but you
    can create the table now and start writing to it here).
-6. Frontend: Collector dashboard — search member, select unpaid period,
+- [x] 6. Frontend: Collector dashboard — search member, select unpaid period,
    confirm payment.
 
 **Done when:** a Collector can record a cash payment, the contribution
@@ -179,9 +179,9 @@ verification page never exposes more than the limited field set.
 3. Endpoint: `POST /payments/:id/refund` — Central Management only. In one
    transaction: set `payments.status = REFUNDED`, `refunded_by`,
    `refunded_at`; set the linked `member_contributions.status = UNPAID`;
-   write an audit log entry. Never delete the payment row.
+   write an audit log entry. Never delete the payment row.  [x]
 4. Frontend: Central Management refund action with confirmation step and
-   reason field (stored in `audit_logs.metadata`).
+   reason field (stored in `audit_logs.metadata`).  [x]
 
 **Done when:** a refund is fully reversible in the data (contribution
 payable again) and fully traceable (who, when, why, on what transaction).
@@ -191,12 +191,12 @@ payable again) and fully traceable (who, when, why, on what transaction).
 ## Phase 8 — Dashboards & Reports
 
 1. Central Management dashboard: org-wide totals (members, collected,
-   outstanding, by method, by zone).
-2. Zone/Unit/Sub-Unit dashboards: same shape, scoped to their level.
+   outstanding, by method, by zone).  [x]
+2. Zone/Unit/Sub-Unit dashboards: same shape, scoped to their level.  [x]
 3. Collector dashboard: their members, paid/unpaid this month, recent
-   payments, quick actions (already partially built in Phase 4/5).
+   payments, quick actions (already partially built in Phase 4/5).  [x]
 4. Report export endpoints: PDF, Excel, CSV for membership and financial
-   reports listed in `ARCHITECTURE.md`.
+   reports listed in `ARCHITECTURE.md`.  [x]
 
 **Done when:** each role's dashboard numbers are correct and match a manual
 SQL check against the same data.
