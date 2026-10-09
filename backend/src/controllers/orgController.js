@@ -30,10 +30,17 @@ const createZone = asyncHandler(async (req, res) => {
 });
 
 const listZones = asyncHandler(async (req, res) => {
-  const zones = await req.scope.query(
-    db('zones').select('zones.*').orderBy('zones.name'),
-    'zones'
-  );
+  const { region_id } = req.query;
+  if (region_id !== undefined && (!Number.isInteger(Number(region_id)) || Number(region_id) <= 0)) {
+    return res.error('region_id must be a positive integer', 400);
+  }
+
+  let query = db('zones').select('zones.*').orderBy('zones.name');
+  if (region_id !== undefined) {
+    query = query.where('zones.region_id', Number(region_id));
+  }
+  query = req.scope.query(query, 'zones');
+  const zones = await query;
   return res.success(zones);
 });
 

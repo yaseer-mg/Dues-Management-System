@@ -10,6 +10,8 @@ export default function Members() {
   const canRegister = user?.role === 'Sub-Unit Management';
   // Only users without a fixed sub-unit can drill down the hierarchy.
   const showDrilldown = !user?.sub_unit_id;
+  // CM and Region coordinators get the Region selector as the top level.
+  const showRegionFilter = ['Central Management', 'Region Management'].includes(user?.role);
 
   const [members, setMembers] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -18,9 +20,11 @@ export default function Members() {
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
 
+  const [regions, setRegions] = useState([]);
   const [zones, setZones] = useState([]);
   const [units, setUnits] = useState([]);
   const [subUnits, setSubUnits] = useState([]);
+  const [regionId, setRegionId] = useState(user?.region_id ? String(user.region_id) : '');
   const [zoneId, setZoneId] = useState('');
   const [unitId, setUnitId] = useState('');
   const [subUnitId, setSubUnitId] = useState('');
@@ -43,14 +47,33 @@ export default function Members() {
     }
   };
 
+  const loadZones = async (rid) => {
+    const params = rid ? { region_id: rid } : {};
+    try {
+      const res = await api.get('/api/zones', { params });
+      setZones(res.data.data || []);
+    } catch {
+      setZones([]);
+    }
+  };
+
   useEffect(() => {
     loadMembers();
     api.get('/api/categories')
       .then((res) => setCategories(res.data.data || []))
       .catch(() => {});
-    api.get('/api/zones')
-      .then((res) => setZones(res.data.data || []))
-      .catch(() => {});
+    if (showRegionFilter) {
+      api.get('/api/regions')
+        .then((res) => {
+          const list = res.data.data || [];
+          setRegions(list);
+          const rId = user?.region_id ? String(user.region_id) : '';
+          if (rId || list.length > 0) loadZones(rId);
+        })
+        .catch(() => loadZones(''));
+    } else {
+      loadZones('');
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -60,10 +83,22 @@ export default function Members() {
     if (subUnitId) params.sub_unit_id = subUnitId;
     else if (unitId) params.unit_id = unitId;
     else if (zoneId) params.zone_id = zoneId;
+    else if (regionId) params.region_id = regionId;
     if (query) params.search = query;
     loadMembers(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoneId, unitId, subUnitId, query]);
+  }, [regionId, zoneId, unitId, subUnitId, query]);
+
+  const onRegionChange = (e) => {
+    const id = e.target.value;
+    setRegionId(id);
+    setZoneId('');
+    setUnitId('');
+    setSubUnitId('');
+    setUnits([]);
+    setSubUnits([]);
+    loadZones(id);
+  };
 
   const onZoneChange = async (e) => {
     const id = e.target.value;
@@ -111,7 +146,11 @@ export default function Members() {
       const z = zones.find((x) => String(x.id) === String(zoneId));
       return `Zone: ${z ? z.name : ''}`;
     }
-    return 'All branches';
+    if (regionId) {
+      const r = regions.find((x) => String(x.id) === String(regionId));
+      return `Region: ${r ? r.name : ''}`;
+    }
+    return 'All regions';
   })();
 
   const handleSubmit = async (e) => {
@@ -152,10 +191,21 @@ export default function Members() {
         )}
       </div>
 
-      {/* Hierarchy drill-down (Zone → Unit → Sub-Unit) */}
+      {/* Hierarchy drill-down (Region → Zone → Unit → Sub-Unit) */}
       {showDrilldown && (
         <div className="bg-white rounded-xl border border-emerald-100 shadow-sm p-4 mb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {showRegionFilter && (
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Region</label>
+                <select className={inputCls} value={regionId} onChange={onRegionChange}>
+                  <option value="">All Regions</option>
+                  {regions.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Zone</label>
               <select className={inputCls} value={zoneId} onChange={onZoneChange}>
@@ -249,7 +299,7 @@ export default function Members() {
       {loading ? (
         <p className="text-gray-400">Loading...</p>
       ) : members.length === 0 ? (
-        <p className="text-gray-400">No members found{search ? ` for "${search}"` : ''} in this branch.</p>
+        <p className="text-gray-400">No members found{search ? ` for "${search}"` : ''} in this selection.</p>
       ) : (
         <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 bg-emerald-50 text-emerald-800 text-xs font-semibold uppercase tracking-wide">

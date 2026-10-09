@@ -20,6 +20,7 @@ const login = asyncHandler(async (req, res) => {
       'users.email',
       'users.password_hash',
       'users.status',
+      'users.region_id',
       'users.zone_id',
       'users.unit_id',
       'users.sub_unit_id',
@@ -59,6 +60,7 @@ const login = asyncHandler(async (req, res) => {
   const tokenPayload = {
     user_id: user.id,
     role: user.role,
+    region_id: user.region_id,
     zone_id: user.zone_id,
     unit_id: user.unit_id,
     sub_unit_id: user.sub_unit_id,
@@ -73,6 +75,7 @@ const login = asyncHandler(async (req, res) => {
     phone: user.phone,
     email: user.email,
     role: user.role,
+    region_id: user.region_id,
     zone_id: user.zone_id,
     unit_id: user.unit_id,
     sub_unit_id: user.sub_unit_id,

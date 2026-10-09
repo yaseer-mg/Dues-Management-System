@@ -46,65 +46,115 @@ async function getDashboardStats({ scope }) {
     .count({ count: 'payments.id' });
   const byMethod = await byMethodQb;
 
-  // --- breakdown: by zone for Central Management, by sub-unit otherwise ---
-  const dim = isCentral ? 'zones' : 'sub_units';
-  const dimSelectId = `${dim}.id`;
-  const dimSelectName = `${dim}.name`;
-  const dimJoin = (q) =>
-    q
-      .join('sub_units', 'sub_units.id', 'members.sub_unit_id')
-      .join('units', 'units.id', 'sub_units.unit_id')
-      .join('zones', 'zones.id', 'units.zone_id');
-
-  const memberByDimQb = () => {
-    const q = dimJoin(db('members'));
-    scope.query(q, 'members');
-    return q;
+  // --- breakdown: hierarchical by role ----
+  //   CM / Region Mgmt        -> zones + units + sub_units
+  //   Zone Management         -> units + sub_units
+  //   Unit Management         -> sub_units
+  //   Sub-Unit / Collector    -> none (frontend shows member list instead)
+  const DIMS = {
+    zones: {
+      select: ['zones.id', 'zones.name'],
+      group: ['zones.id', 'zones.name'],
+      joins: (q) =>
+        q
+          .join('sub_units', 'sub_units.id', 'members.sub_unit_id')
+          .join('units', 'units.id', 'sub_units.unit_id')
+          .join('zones', 'zones.id', 'units.zone_id'),
+      extra: () => ({}),
+    },
+    units: {
+      select: ['units.id', 'units.name', 'zones.name as zone_name'],
+      group: ['units.id', 'units.name', 'zones.name'],
+      joins: (q) =>
+        q
+          .join('sub_units', 'sub_units.id', 'members.sub_unit_id')
+          .join('units', 'units.id', 'sub_units.unit_id')
+          .join('zones', 'zones.id', 'units.zone_id'),
+      extra: (r) => ({ zone_name: r.zone_name }),
+    },
+    sub_units: {
+      select: ['sub_units.id', 'sub_units.name', 'units.name as unit_name', 'zones.name as zone_name'],
+      group: ['sub_units.id', 'sub_units.name', 'units.name', 'zones.name'],
+      joins: (q) =>
+        q
+          .join('sub_units', 'sub_units.id', 'members.sub_unit_id')
+          .join('units', 'units.id', 'sub_units.unit_id')
+          .join('zones', 'zones.id', 'units.zone_id'),
+      extra: (r) => ({ unit_name: r.unit_name, zone_name: r.zone_name }),
+    },
   };
 
-  const [memberCounts, collectedByDim, outstandingByDim] = await Promise.all([
-    memberByDimQb()
-      .groupBy(dimSelectId, dimSelectName)
-      .select(dimSelectId, dimSelectName)
-      .count({ value: 'members.id' }),
-    (() => {
-      const q = dimJoin(
-        db('payments')
-          .join('member_contributions', 'member_contributions.id', 'payments.member_contribution_id')
-          .join('members', 'members.id', 'member_contributions.member_id')
-          .where('payments.status', 'SUCCESS')
-          .groupBy(dimSelectId, dimSelectName)
-          .select(dimSelectId, dimSelectName)
-      );
+  const computeBreakdownLevel = async (dim) => {
+    const d = DIMS[dim];
+    const scoped = (q) => {
+      d.joins(q);
       scope.query(q, 'members');
-      return q.sum({ value: 'payments.amount' }).count({ count: 'payments.id' });
-    })(),
-    (() => {
-      const q = dimJoin(
-        db('member_contributions')
-          .join('members', 'members.id', 'member_contributions.member_id')
-          .where('member_contributions.status', 'UNPAID')
-          .groupBy(dimSelectId, dimSelectName)
-          .select(dimSelectId, dimSelectName)
-      );
-      scope.query(q, 'members');
-      return q.sum({ value: 'member_contributions.expected_amount' }).count({ count: 'member_contributions.id' });
-    })(),
-  ]);
+      return q;
+    };
+    const group = (q) => q.groupBy(...d.group).select(...d.select);
 
-  const key = (row) => Number(row.id);
-  const breakdownItems = await Promise.all(
-    memberCounts.map(async (row) => {
-      const id = key(row);
-      const collectedRow = collectedByDim.find((c) => key(c) === id);
-      const outstandingRow = outstandingByDim.find((o) => key(o) === id);
-      return {
-        id,
-        name: row.name,
-        members: Number(row.value) || 0,
-        collected: Number((collectedRow && collectedRow.value) || 0) || 0,
-        outstanding: Number((outstandingRow && outstandingRow.value) || 0) || 0,
-      };
+    const [memberRows, expectedRows, collectedRows, outstandingRows] = await Promise.all([
+      group(scoped(db('members'))).count('members.id as member_count'),
+      group(
+        scoped(db('member_contributions').join('members', 'members.id', 'member_contributions.member_id'))
+      ).sum('member_contributions.expected_amount as expected'),
+      group(
+        scoped(
+          db('payments')
+            .join('member_contributions', 'member_contributions.id', 'payments.member_contribution_id')
+            .join('members', 'members.id', 'member_contributions.member_id')
+            .where('payments.status', 'SUCCESS')
+        )
+      ).sum('payments.amount as collected'),
+      group(
+        scoped(
+          db('member_contributions')
+            .join('members', 'members.id', 'member_contributions.member_id')
+            .where('member_contributions.status', 'UNPAID')
+        )
+      ).sum('member_contributions.expected_amount as outstanding'),
+    ]);
+
+    const byId = (arr) => arr.reduce((m, r) => ({ ...m, [Number(r.id)]: r }), {});
+    const m = byId(memberRows);
+    const e = byId(expectedRows);
+    const c = byId(collectedRows);
+    const o = byId(outstandingRows);
+    const ids = new Set([...Object.keys(m), ...Object.keys(e), ...Object.keys(c), ...Object.keys(o)]);
+
+    return [...ids]
+      .map((k) => {
+        const id = Number(k);
+        const r = m[k] || e[k] || c[k] || o[k];
+        return {
+          id,
+          name: r.name,
+          ...d.extra(r),
+          members: Number((m[k] && m[k].member_count) || 0),
+          expected: Number((e[k] && e[k].expected) || 0),
+          collected: Number((c[k] && c[k].collected) || 0),
+          outstanding: Number((o[k] && o[k].outstanding) || 0),
+        };
+      })
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  };
+
+  const levels = [];
+  if (scope.isSubUnit()) {
+    // Sub-Unit officers and Collectors: no breakdown, dashboard shows members.
+  } else if (scope.isUnit()) {
+    levels.push('sub_units');
+  } else if (scope.isZone()) {
+    levels.push('units', 'sub_units');
+  } else if (isCentral || scope.isRegion()) {
+    levels.push('zones', 'units', 'sub_units');
+  }
+
+  const KEY = { zones: 'zones', units: 'units', sub_units: 'subUnits' };
+  const breakdown = {};
+  await Promise.all(
+    levels.map(async (lvl) => {
+      breakdown[KEY[lvl]] = await computeBreakdownLevel(lvl);
     })
   );
 
@@ -157,13 +207,16 @@ async function getDashboardStats({ scope }) {
       total: periodMembers.length,
       paid,
       unpaid: periodMembers.length - paid,
-      members: periodMembers.map((m) => ({
-        id: m.id,
-        name: m.name,
-        member_code: m.member_code,
-        status: m.status,
-        paid_at: m.paid_at,
-      })),
+      // The member list is only relevant to Sub-Unit officers and Collectors.
+      members: scope.isSubUnit()
+        ? periodMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            member_code: m.member_code,
+            status: m.status,
+            paid_at: m.paid_at,
+          }))
+        : [],
     };
   }
 
@@ -180,10 +233,7 @@ async function getDashboardStats({ scope }) {
       total: Number(m.total) || 0,
       count: Number(m.count) || 0,
     })),
-    breakdown: {
-      level: dim,
-      items: breakdownItems,
-    },
+    breakdown,
     recentPayments: recentPayments.map((p) => ({
       id: p.id,
       member_name: p.member_name,

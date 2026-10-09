@@ -57,9 +57,9 @@ const createMember = asyncHandler(async (req, res) => {
 });
 
 const listMembers = asyncHandler(async (req, res) => {
-  const { search, zone_id, unit_id, sub_unit_id } = req.query;
+  const { search, region_id, zone_id, unit_id, sub_unit_id } = req.query;
 
-  for (const [name, value] of [['zone_id', zone_id], ['unit_id', unit_id], ['sub_unit_id', sub_unit_id]]) {
+  for (const [name, value] of [['region_id', region_id], ['zone_id', zone_id], ['unit_id', unit_id], ['sub_unit_id', sub_unit_id]]) {
     if (value !== undefined && (!Number.isInteger(Number(value)) || Number(value) <= 0)) {
       return res.error(`${name} must be a positive integer`, 400);
     }
@@ -111,6 +111,14 @@ const listMembers = asyncHandler(async (req, res) => {
     query.whereIn('members.sub_unit_id', function () {
       this.select('id').from('sub_units').whereIn('unit_id', function () {
         this.select('id').from('units').where('zone_id', Number(zone_id));
+      });
+    });
+  } else if (region_id !== undefined) {
+    query.whereIn('members.sub_unit_id', function () {
+      this.select('id').from('sub_units').whereIn('unit_id', function () {
+        this.select('id').from('units').whereIn('zone_id', function () {
+          this.select('id').from('zones').where('region_id', Number(region_id));
+        });
       });
     });
   }

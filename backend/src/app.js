@@ -79,8 +79,8 @@ app.use('/api', dashboardRoutes);
 const reportRoutes = require('./routes/reportRoutes');
 app.use('/api', reportRoutes);
 
-const branchRoutes = require('./routes/branchRoutes');
-app.use('/api', branchRoutes);
+const regionRoutes = require('./routes/regionRoutes');
+app.use('/api', regionRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

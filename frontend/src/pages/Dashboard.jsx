@@ -40,6 +40,7 @@ export default function Dashboard() {
 
   const { totals, byMethod, breakdown, recentPayments, periodSummary } = data;
   const showQuickCollect = user?.role === 'Collector';
+  const showMembers = ['Sub-Unit Management', 'Collector'].includes(user?.role);
 
   const statCards = [
     { label: 'Members', value: totals.members.toLocaleString(), accent: 'text-emerald-700' },
@@ -47,6 +48,12 @@ export default function Dashboard() {
     { label: 'Outstanding', value: naira(totals.outstanding), accent: 'text-amber-600' },
     { label: 'Paid Payments', value: totals.paidPayments.toLocaleString(), accent: 'text-slate-800' },
   ];
+
+  const breakdownTables = [
+    { key: 'zones', title: 'Zones', parent: null },
+    { key: 'units', title: 'Units', parent: 'zone_name' },
+    { key: 'subUnits', title: 'Sub-Units', parent: 'unit_name' },
+  ].filter((t) => breakdown?.[t.key]?.length > 0);
 
   return (
     <div>
@@ -91,42 +98,44 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-
-        {/* Breakdown */}
-        <div className="bg-white rounded-xl border border-emerald-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-emerald-900 uppercase tracking-wide mb-3">
-            By {breakdown.level === 'zones' ? 'Zone' : 'Sub-Unit'}
-          </h2>
-          {breakdown.items.length === 0 ? (
-            <p className="text-gray-400 text-sm">No data yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
-                    <th className="py-1 pr-3 font-semibold">{breakdown.level === 'zones' ? 'Zone' : 'Sub-Unit'}</th>
-                    <th className="py-1 pr-3 font-semibold text-right">Members</th>
-                    <th className="py-1 pr-3 font-semibold text-right">Collected</th>
-                    <th className="py-1 font-semibold text-right">Outstanding</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {breakdown.items.map((item) => (
-                    <tr key={item.id} className="border-t border-gray-100">
-                      <td className="py-2 pr-3 font-medium text-slate-800">{item.name}</td>
-                      <td className="py-2 pr-3 text-right text-gray-600">{item.members.toLocaleString()}</td>
-                      <td className="py-2 pr-3 text-right text-emerald-700 font-semibold">{naira(item.collected)}</td>
-                      <td className="py-2 text-right text-amber-600 font-semibold">{naira(item.outstanding)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Current period */}
+      {/* Hierarchical breakdown (Zones / Units / Sub-Units) */}
+      {breakdownTables.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+          {breakdownTables.map((t) => (
+            <div key={t.key} className="bg-white rounded-xl border border-emerald-100 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-emerald-900 uppercase tracking-wide mb-3">{t.title}</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-gray-400 text-xs uppercase tracking-wide">
+                      {t.parent && <th className="py-1 pr-3 font-semibold">{t.key === 'units' ? 'Zone' : 'Unit'}</th>}
+                      <th className="py-1 pr-3 font-semibold">{t.title.replace(/s$/, '')}</th>
+                      <th className="py-1 pr-3 font-semibold text-right">Members</th>
+                      <th className="py-1 pr-3 font-semibold text-right">Expected</th>
+                      <th className="py-1 pr-3 font-semibold text-right">Collected</th>
+                      <th className="py-1 font-semibold text-right">Outstanding</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {breakdown[t.key].map((item) => (
+                      <tr key={item.id} className="border-t border-gray-100">
+                        {t.parent && <td className="py-2 pr-3 text-gray-500 whitespace-nowrap">{item[t.parent] || '—'}</td>}
+                        <td className="py-2 pr-3 font-medium text-slate-800 whitespace-nowrap">{item.name}</td>
+                        <td className="py-2 pr-3 text-right text-gray-600">{item.members.toLocaleString()}</td>
+                        <td className="py-2 pr-3 text-right text-slate-700 font-semibold">{naira(item.expected)}</td>
+                        <td className="py-2 pr-3 text-right text-emerald-700 font-semibold">{naira(item.collected)}</td>
+                        <td className="py-2 text-right text-amber-600 font-semibold">{naira(item.outstanding)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {periodSummary ? (
         <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden mb-6">
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
@@ -140,9 +149,10 @@ export default function Dashboard() {
               {periodSummary.unpaid} outstanding
             </span>
           </div>
-          {periodSummary.members.length === 0 ? (
-            <p className="px-5 py-4 text-gray-400 text-sm">No members in your scope for this period.</p>
-          ) : (
+          {showMembers &&
+            (periodSummary.members.length === 0 ? (
+              <p className="px-5 py-4 text-gray-400 text-sm">No members in your scope for this period.</p>
+            ) : (
             <div className="overflow-x-auto mt-2">
               <table className="w-full text-sm min-w-[480px]">
                 <thead>
@@ -182,7 +192,7 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
-          )}
+            ))}
         </div>
       ) : null}
 

@@ -14,6 +14,7 @@ function authenticate(req, res, next) {
     req.user = {
       user_id: payload.user_id,
       role: payload.role,
+      region_id: payload.region_id ?? null,
       zone_id: payload.zone_id ?? null,
       unit_id: payload.unit_id ?? null,
       sub_unit_id: payload.sub_unit_id ?? null,
