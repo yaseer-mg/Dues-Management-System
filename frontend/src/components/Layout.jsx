@@ -3,11 +3,11 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', to: '/dashboard', roles: ['Central Management', 'Region Management', 'Zone Management', 'Unit Management', 'Sub-Unit Management', 'Collector'] },
-  { label: 'Members', to: '/members', roles: ['Central Management', 'Region Management', 'Zone Management', 'Unit Management', 'Sub-Unit Management', 'Collector'] },
+  { label: 'Dashboard', to: '/dashboard', roles: ['Central Management', 'Region Management', 'Zone Management', 'Account Officer', 'Sub-Unit Management', 'Collector'] },
+  { label: 'Members', to: '/members', roles: ['Central Management', 'Region Management', 'Zone Management', 'Account Officer', 'Sub-Unit Management', 'Collector'] },
   { label: 'Collect Cash', to: '/collect', roles: ['Collector'] },
   { label: 'Reports', to: '/reports', roles: ['Central Management'] },
-  { label: 'Regions', to: '/regions', roles: ['Central Management', 'Region Management', 'Zone Management', 'Unit Management', 'Sub-Unit Management'] },
+  { label: 'Regions', to: '/regions', roles: ['Central Management', 'Region Management', 'Zone Management', 'Account Officer', 'Sub-Unit Management'] },
   { label: 'Periods', to: '/periods', roles: ['Central Management'] },
   { label: 'Zones', to: '/zones', roles: ['Central Management'] },
   { label: 'Units', to: '/units', roles: ['Central Management'] },

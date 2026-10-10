@@ -12,11 +12,23 @@ const {
 
 const FORMATS = ['csv', 'xlsx', 'pdf'];
 
-async function buildReport({ scope, kind, format, title }) {
+function parseFilters(query) {
+  const num = (v) => (v == null || v === '' ? undefined : Number(v));
+  return {
+    region_id: num(query.region_id),
+    zone_id: num(query.zone_id),
+    unit_id: num(query.unit_id),
+    sub_unit_id: num(query.sub_unit_id),
+    period_id: num(query.period_id),
+    status: query.status || undefined,
+  };
+}
+
+async function buildReport({ scope, kind, format, title, filters = {} }) {
   let rows;
-  if (kind === 'members') rows = await getMembersReport(scope);
-  else if (kind === 'contributions') rows = await getContributionsReport(scope);
-  else rows = await getPaymentsReport(scope);
+  if (kind === 'members') rows = await getMembersReport(scope, filters);
+  else if (kind === 'contributions') rows = await getContributionsReport(scope, filters);
+  else rows = await getPaymentsReport(scope, filters);
 
   const columns = colDefs[kind];
   const tpl = (buffer, ext) => ({
@@ -42,11 +54,13 @@ async function buildReport({ scope, kind, format, title }) {
 const members = asyncHandler(async (req, res) => {
   const format = (req.query.format || 'csv').toLowerCase();
   if (!FORMATS.includes(format)) return res.error(`format must be one of: ${FORMATS.join(', ')}`, 400);
+
   const file = await buildReport({
     scope: req.scope,
     kind: 'members',
     format,
     title: 'Membership Report',
+    filters: parseFilters(req.query),
   });
   res.setHeader('Content-Type', file.contentType);
   res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
@@ -61,6 +75,7 @@ const contributions = asyncHandler(async (req, res) => {
     kind: 'contributions',
     format,
     title: 'Contributions / Dues Collection Report',
+    filters: parseFilters(req.query),
   });
   res.setHeader('Content-Type', file.contentType);
   res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
@@ -75,6 +90,7 @@ const payments = asyncHandler(async (req, res) => {
     kind: 'payments',
     format,
     title: 'Payments / Financial Report',
+    filters: parseFilters(req.query),
   });
   res.setHeader('Content-Type', file.contentType);
   res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);

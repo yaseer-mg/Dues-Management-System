@@ -9,7 +9,40 @@ const MONTH_NAMES = [
 
 // ---------- data ----------
 
-async function getMembersReport(scope) {
+// Applies optional CM/drill-down filters (region/zone/unit/sub-unit) on top of
+// the role scope. Filters are ANDed, so they can only narrow results.
+function applyOrgFilters(q, filters, memberCol) {
+  if (!filters) return q;
+  const { region_id, zone_id, unit_id, sub_unit_id } = filters;
+  if (sub_unit_id) q.where(memberCol, sub_unit_id);
+  if (unit_id) {
+    q.whereIn(
+      memberCol,
+      db('sub_units').where('unit_id', unit_id).select('id')
+    );
+  }
+  if (zone_id) {
+    q.whereIn(
+      memberCol,
+      db('sub_units').join('units', 'units.id', 'sub_units.unit_id')
+        .where('units.zone_id', zone_id)
+        .select('sub_units.id')
+    );
+  }
+  if (region_id) {
+    q.whereIn(
+      memberCol,
+      db('sub_units')
+        .join('units', 'units.id', 'sub_units.unit_id')
+        .join('zones', 'zones.id', 'units.zone_id')
+        .where('zones.region_id', region_id)
+        .select('sub_units.id')
+    );
+  }
+  return q;
+}
+
+async function getMembersReport(scope, filters = {}) {
   const q = db('members')
     .leftJoin('sub_units', 'sub_units.id', 'members.sub_unit_id')
     .leftJoin('units', 'units.id', 'sub_units.unit_id')
@@ -29,10 +62,12 @@ async function getMembersReport(scope) {
       'contribution_categories.amount as monthly_dues'
     );
   scope.query(q, 'members');
+  applyOrgFilters(q, filters, 'members.sub_unit_id');
+  if (filters.status) q.where('members.status', filters.status);
   return q;
 }
 
-async function getContributionsReport(scope) {
+async function getContributionsReport(scope, filters = {}) {
   const q = db('member_contributions as mc')
     .join('members', 'members.id', 'mc.member_id')
     .join('contribution_periods as cp', 'cp.id', 'mc.contribution_period_id')
@@ -53,6 +88,9 @@ async function getContributionsReport(scope) {
       'r.receipt_number'
     );
   scope.query(q, 'members');
+  applyOrgFilters(q, filters, 'members.sub_unit_id');
+  if (filters.period_id) q.where('mc.contribution_period_id', filters.period_id);
+  if (filters.status) q.where('mc.status', filters.status);
   const rows = await q;
   return rows.map((r) => ({
     ...r,
@@ -60,7 +98,7 @@ async function getContributionsReport(scope) {
   }));
 }
 
-async function getPaymentsReport(scope) {
+async function getPaymentsReport(scope, filters = {}) {
   const q = db('payments as p')
     .join('member_contributions as mc', 'mc.id', 'p.member_contribution_id')
     .join('members', 'members.id', 'mc.member_id')
@@ -81,6 +119,14 @@ async function getPaymentsReport(scope) {
       'p.created_at'
     );
   scope.query(q, 'members');
+  applyOrgFilters(q, filters, 'members.sub_unit_id');
+  if (filters.period_id) {
+    q.whereIn(
+      'p.member_contribution_id',
+      db('member_contributions').where('contribution_period_id', filters.period_id).select('id')
+    );
+  }
+  if (filters.status) q.where('p.status', filters.status);
   return q;
 }
 
