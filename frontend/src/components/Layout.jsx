@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
@@ -17,7 +17,13 @@ const NAV_ITEMS = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile menu whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -85,7 +91,7 @@ export default function Layout() {
 
       {/* Mobile dropdown menu */}
       {menuOpen && (
-        <div className="md:hidden bg-emerald-700 shadow-lg">
+        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-10 bg-emerald-700 shadow-lg overflow-y-auto overscroll-contain">
           <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
             {items.map((item) => (
               <NavLink key={item.to} to={item.to} onClick={closeMenu} className={navLinkCls}>
