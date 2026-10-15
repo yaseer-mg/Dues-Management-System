@@ -17,14 +17,31 @@ async function downloadReceipt(req, res) {
 
   let payment;
   try {
-    payment = await req.scope.query(
-      db('payments')
-        .join('member_contributions', 'member_contributions.id', 'payments.member_contribution_id')
-        .join('members', 'members.id', 'member_contributions.member_id')
-        .where('payments.id', paymentId)
-        .first(),
-      'members',
-    );
+    const paymentQb = db('payments')
+      .join('member_contributions', 'member_contributions.id', 'payments.member_contribution_id')
+      .join('members', 'members.id', 'member_contributions.member_id')
+      .where('payments.id', paymentId);
+
+    // Collectors may review payment records for every sub-unit in their own
+    // unit, and Account Officers for every unit in their own zone.
+    if (req.user.role === 'Collector' && req.user.unit_id) {
+      paymentQb.whereIn(
+        'members.sub_unit_id',
+        db('sub_units').where('unit_id', req.user.unit_id).select('id'),
+      );
+    } else if (req.user.role === 'Account Officer' && req.user.zone_id) {
+      paymentQb.whereIn(
+        'members.sub_unit_id',
+        db('sub_units')
+          .join('units', 'units.id', 'sub_units.unit_id')
+          .where('units.zone_id', req.user.zone_id)
+          .select('sub_units.id'),
+      );
+    } else {
+      req.scope.query(paymentQb, 'members');
+    }
+
+    payment = await paymentQb.first();
   } catch (err) {
     return dbError('Database error while looking up payment', 500);
   }

@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import OrgList from './pages/OrgList';
 import Members from './pages/Members';
 import ManagePeriods from './pages/ManagePeriods';
+import SubUnitRecords from './pages/SubUnitRecords';
+import UnitRecords from './pages/UnitRecords';
 import MemberContributions from './pages/MemberContributions';
 import CollectCash from './pages/CollectCash';
 import PayLink from './pages/PayLink';
@@ -37,6 +39,8 @@ export default function App() {
             <Route path="/members/:id/contributions" element={<MemberContributions />} />
             <Route path="/periods" element={<ManagePeriods />} />
             <Route path="/collect" element={<CollectCash />} />
+            <Route path="/sub-unit" element={<SubUnitRecords />} />
+            <Route path="/unit-records" element={<UnitRecords />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/regions" element={<RegionSummary />} />
           </Route>

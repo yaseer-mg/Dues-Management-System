@@ -97,7 +97,7 @@ async function generateReceiptPdf(receiptNumberOrCode) {
     // Header band
     doc.rect(0, 0, doc.page.width, 66).fill('#065f46');
     doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(15)
-      .text('Centralized Dues Management', LEFT, 18, { width: innerW, align: 'center' });
+      .text('MONTHLY DUE', LEFT, 18, { width: innerW, align: 'center' });
     doc.font('Helvetica').fontSize(9).fillColor('#d1fae5')
       .text('OFFICIAL PAYMENT RECEIPT', LEFT, 40, { width: innerW, align: 'center' });
 
@@ -114,7 +114,6 @@ async function generateReceiptPdf(receiptNumberOrCode) {
     // Details card
     y += 20;
     const rows = [
-      ['Member', member.name],
       ['Member Code', member.member_code],
       ['Period', `${month} ${period.year}`],
       ['Method', payment.method],

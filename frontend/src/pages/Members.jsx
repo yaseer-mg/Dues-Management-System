@@ -10,8 +10,9 @@ export default function Members() {
   const canRegister = ['Sub-Unit Management', 'Collector'].includes(user?.role);
   // Only users without a fixed sub-unit can drill down the hierarchy.
   const showDrilldown = !user?.sub_unit_id;
-  // CM and Region coordinators get the Region selector as the top level.
-  const showRegionFilter = ['Central Management', 'Region Management'].includes(user?.role);
+  // Only Central Management picks a region. Region coordinators are already
+  // scoped to their own region, so they only filter zone/unit/sub-unit.
+  const showRegionFilter = user?.role === 'Central Management';
 
   const [members, setMembers] = useState([]);
   const [categories, setCategories] = useState([]);

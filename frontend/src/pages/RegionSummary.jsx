@@ -10,6 +10,12 @@ const MONTHS = [
 const naira = (n) => `₦${Number(n).toLocaleString()}`;
 
 function SummaryTable({ title, rows, parents }) {
+  // Parent columns look up the joined ancestor names (Region -> region_name).
+  const parentKey = (p) => `${p.toLowerCase()}_name`;
+  const entityLabel = title.replace(/s$/, '');
+  const isRegions = title === 'Regions';
+  const colCount = parents.length + 1 + (isRegions ? 1 : 0) + 4;
+
   return (
     <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 bg-emerald-50 text-emerald-800 text-xs font-semibold uppercase tracking-wide">{title}</div>
@@ -20,8 +26,8 @@ function SummaryTable({ title, rows, parents }) {
               {parents.map((p) => (
                 <th key={p} className="px-4 py-2.5 font-semibold whitespace-nowrap">{p}</th>
               ))}
-              <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Region</th>
-              <th className="px-4 py-2.5 font-semibold whitespace-nowrap">{title === 'Regions' ? 'Coordinator' : 'Branch'}</th>
+              <th className="px-4 py-2.5 font-semibold whitespace-nowrap">{entityLabel}</th>
+              {isRegions && <th className="px-4 py-2.5 font-semibold whitespace-nowrap">Coordinator</th>}
               <th className="px-4 py-2.5 font-semibold text-right whitespace-nowrap">Members</th>
               <th className="px-4 py-2.5 font-semibold text-right whitespace-nowrap">Expected</th>
               <th className="px-4 py-2.5 font-semibold text-right whitespace-nowrap">Paid</th>
@@ -30,16 +36,16 @@ function SummaryTable({ title, rows, parents }) {
           </thead>
           <tbody>
             {rows.length === 0 ? (
-              <tr><td className="px-4 py-3 text-gray-400" colSpan={5 + parents.length}>No data.</td></tr>
+              <tr><td className="px-4 py-3 text-gray-400" colSpan={colCount}>No data.</td></tr>
             ) : rows.map((r) => (
               <tr key={r.uid} className="border-t border-gray-100">
-                {parents.map((p) => <td key={p} className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{r[`${p.toLowerCase().replace(/[^a-z]+/g, '_')}`] || '—'}</td>)}
-                <td className="px-4 py-2.5 font-medium text-slate-800 whitespace-nowrap">{r.region_name || r.name}</td>
-                <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{r.coordinator_name ? `${r.coordinator_name} (${r.coordinator_phone})` : '—'}</td>
+                {parents.map((p) => <td key={p} className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{r[parentKey(p)] || '—'}</td>)}
+                <td className="px-4 py-2.5 font-medium text-slate-800 whitespace-nowrap">{r.name || r.region_name}</td>
+                {isRegions && <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{r.coordinator_name ? `${r.coordinator_name} (${r.coordinator_phone})` : '—'}</td>}
                 <td className="px-4 py-2.5 text-right text-slate-800 font-semibold">{r.members.toLocaleString()}</td>
-                <td className="px-4 py-2.5 text-right text-emerald-700 font-semibold">{naira(r.expected)}</td>
-                <td className="px-4 py-2.5 text-right text-emerald-700">{r.paid.toLocaleString()}</td>
-                <td className="px-4 py-2.5 text-right text-amber-600">{r.unpaid.toLocaleString()}</td>
+                <td className="px-4 py-2.5 text-right text-gray-600">{naira(r.expected)}</td>
+                <td className="px-4 py-2.5 text-right text-emerald-700 font-semibold">{r.paid.toLocaleString()}</td>
+                <td className="px-4 py-2.5 text-right text-gray-600">{r.unpaid.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
