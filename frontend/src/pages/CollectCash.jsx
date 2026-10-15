@@ -53,21 +53,31 @@ export default function CollectCash() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  // Preload members in scope so the page isn't blank before a search.
+  useEffect(() => {
+    loadMembers('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadMembers = async (q) => {
     setSearching(true);
     setSearchError('');
     setNotice('');
     try {
-      const res = await api.get('/api/members', { params: search.trim() ? { search: search.trim() } : {} });
+      const res = await api.get('/api/members', { params: q ? { search: q } : {} });
       setResults(res.data.data || []);
       setSearched(true);
     } catch (err) {
-      setSearchError(err.response?.data?.message || 'Search failed');
+      setSearchError(err.response?.data?.message || 'Failed to load members');
       setResults([]);
     } finally {
       setSearching(false);
     }
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    await loadMembers(search.trim());
   };
 
   const selectMember = async (member) => {
@@ -216,31 +226,38 @@ export default function CollectCash() {
       </form>
       {searchError && <div className="bg-red-50 text-red-600 border border-red-200 rounded-lg px-3 py-2 text-sm mb-4">{searchError}</div>}
 
-      {/* Search results */}
-      {searched && !searching && (
-        <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden mb-6 max-w-xl">
-          {results.length === 0 ? (
-            <p className="px-4 py-3 text-gray-400 text-sm">No members found.</p>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {results.map((m) => (
-                <li key={m.id}>
-                  <button
-                    onClick={() => selectMember(m)}
-                    className={`w-full text-left px-4 py-3 hover:bg-emerald-50 transition flex items-center justify-between ${selected?.id === m.id ? 'bg-emerald-50' : ''}`}
-                  >
-                    <span>
-                      <span className="font-mono text-emerald-700 text-sm">{m.member_code}</span>
-                      <span className="ml-3 text-gray-800">{m.name}</span>
-                    </span>
-                    <span className="text-xs text-gray-400">select →</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+      {/* Members list (loaded on open, filtered by search) */}
+      {searching && !results.length ? (
+        <p className="text-gray-400 text-sm mb-4">Loading members...</p>
+      ) : searched ? (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+            {search.trim() ? 'Search results' : 'Members in your sub-unit'} ({results.length})
+          </p>
+          <div className="bg-white rounded-xl border border-emerald-100 shadow-sm overflow-hidden max-w-xl max-h-72 overflow-y-auto">
+            {results.length === 0 ? (
+              <p className="px-4 py-3 text-gray-400 text-sm">No members found.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {results.map((m) => (
+                  <li key={m.id}>
+                    <button
+                      onClick={() => selectMember(m)}
+                      className={`w-full text-left px-4 py-3 hover:bg-emerald-50 transition flex items-center justify-between ${selected?.id === m.id ? 'bg-emerald-50' : ''}`}
+                    >
+                      <span>
+                        <span className="font-mono text-emerald-700 text-sm">{m.member_code}</span>
+                        <span className="ml-3 text-gray-800">{m.name}</span>
+                      </span>
+                      <span className="text-xs text-gray-400">select →</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      )}
+      ) : null}
 
       {/* Selected member's contributions */}
       {selected && (

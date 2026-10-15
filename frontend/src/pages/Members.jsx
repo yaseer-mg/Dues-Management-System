@@ -7,7 +7,7 @@ const EMPTY_FORM = { name: '', phone: '', gender: '', contribution_category_id: 
 
 export default function Members() {
   const { user } = useAuth();
-  const canRegister = user?.role === 'Sub-Unit Management';
+  const canRegister = ['Sub-Unit Management', 'Collector'].includes(user?.role);
   // Only users without a fixed sub-unit can drill down the hierarchy.
   const showDrilldown = !user?.sub_unit_id;
   // CM and Region coordinators get the Region selector as the top level.
@@ -57,6 +57,24 @@ export default function Members() {
     }
   };
 
+  const loadUnits = async (zid) => {
+    try {
+      const res = await api.get('/api/units', { params: zid ? { zone_id: zid } : {} });
+      setUnits(res.data.data || []);
+    } catch {
+      setUnits([]);
+    }
+  };
+
+  const loadSubUnits = async (uid) => {
+    try {
+      const res = await api.get('/api/sub-units', { params: uid ? { unit_id: uid } : {} });
+      setSubUnits(res.data.data || []);
+    } catch {
+      setSubUnits([]);
+    }
+  };
+
   useEffect(() => {
     loadMembers();
     api.get('/api/categories')
@@ -74,6 +92,8 @@ export default function Members() {
     } else {
       loadZones('');
     }
+    loadUnits('');
+    loadSubUnits('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -95,35 +115,25 @@ export default function Members() {
     setZoneId('');
     setUnitId('');
     setSubUnitId('');
-    setUnits([]);
-    setSubUnits([]);
     loadZones(id);
+    loadUnits('');
+    loadSubUnits('');
   };
 
-  const onZoneChange = async (e) => {
+  const onZoneChange = (e) => {
     const id = e.target.value;
     setZoneId(id);
     setUnitId('');
     setSubUnitId('');
-    setSubUnits([]);
-    try {
-      const res = id ? await api.get('/api/units', { params: { zone_id: id } }) : null;
-      setUnits(res ? res.data.data || [] : []);
-    } catch {
-      setUnits([]);
-    }
+    loadUnits(id);
+    loadSubUnits('');
   };
 
-  const onUnitChange = async (e) => {
+  const onUnitChange = (e) => {
     const id = e.target.value;
     setUnitId(id);
     setSubUnitId('');
-    try {
-      const res = id ? await api.get('/api/sub-units', { params: { unit_id: id } }) : null;
-      setSubUnits(res ? res.data.data || [] : []);
-    } catch {
-      setSubUnits([]);
-    }
+    loadSubUnits(id);
   };
 
   const onSubUnitChange = (e) => setSubUnitId(e.target.value);
@@ -217,7 +227,7 @@ export default function Members() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Unit</label>
-              <select className={inputCls} value={unitId} onChange={onUnitChange} disabled={!zoneId}>
+              <select className={inputCls} value={unitId} onChange={onUnitChange}>
                 <option value="">All Units</option>
                 {units.map((u) => (
                   <option key={u.id} value={u.id}>{u.name}</option>
@@ -226,7 +236,7 @@ export default function Members() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Sub-Unit</label>
-              <select className={inputCls} value={subUnitId} onChange={onSubUnitChange} disabled={!unitId}>
+              <select className={inputCls} value={subUnitId} onChange={onSubUnitChange}>
                 <option value="">All Sub-Units</option>
                 {subUnits.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>

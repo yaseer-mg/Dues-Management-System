@@ -11,7 +11,7 @@ router.use(scopeMiddleware);
 
 router.get('/members', memberController.listMembers);
 router.get('/members/:code', memberController.getMember);
-router.post('/members', authorize('Sub-Unit Management'), memberController.createMember);
+router.post('/members', authorize('Sub-Unit Management', 'Collector'), memberController.createMember);
 router.patch('/members/:id', memberController.updateMember);
 
 module.exports = router;

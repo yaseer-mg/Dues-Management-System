@@ -13,6 +13,7 @@ router.get('/regions', regionController.listRegions);
 router.post('/regions', regionController.createRegion);
 router.patch('/regions/:id', regionController.updateRegion);
 router.post('/regions/:id/coordinator', regionController.setCoordinator);
-router.post('/regions/:id/zones', regionController.assignZone);
+router.post('/regions/:id/zones', regionController.assignZones);
+router.delete('/regions/:id/zones/:zoneId', regionController.unassignZone);
 
 module.exports = router;

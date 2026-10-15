@@ -30,13 +30,13 @@ export default function App() {
             }
           >
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/zones" element={<OrgList title="Zones" endpoint="/api/zones" createKind="zone" />} />
+            <Route path="/units" element={<OrgList title="Units" endpoint="/api/units" createKind="unit" />} />
+            <Route path="/sub-units" element={<OrgList title="Sub-Units" endpoint="/api/sub-units" createKind="subUnit" />} />
             <Route path="/members" element={<Members />} />
             <Route path="/members/:id/contributions" element={<MemberContributions />} />
             <Route path="/periods" element={<ManagePeriods />} />
             <Route path="/collect" element={<CollectCash />} />
-            <Route path="/zones" element={<OrgList title="Zones" endpoint="/api/zones" />} />
-            <Route path="/units" element={<OrgList title="Units" endpoint="/api/units" />} />
-            <Route path="/sub-units" element={<OrgList title="Sub-Units" endpoint="/api/sub-units" />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/regions" element={<RegionSummary />} />
           </Route>

@@ -144,29 +144,59 @@ const setCoordinator = asyncHandler(async (req, res) => {
   );
 });
 
-const assignZone = asyncHandler(async (req, res) => {
+const assignZones = asyncHandler(async (req, res) => {
   if (!onlyRbac(req, res)) return;
   const { id } = req.params;
-  const { zone_id } = req.body;
-  if (!zone_id || !Number.isInteger(Number(zone_id)) || Number(zone_id) <= 0) {
-    return res.error('zone_id must be a positive integer', 400);
+  const body = req.body || {};
+  const requested = Array.isArray(body.zone_ids)
+    ? body.zone_ids
+    : body.zone_id != null
+      ? [body.zone_id]
+      : [];
+
+  if (!requested.length || requested.some((z) => !Number.isInteger(Number(z)) || Number(z) <= 0)) {
+    return res.error('zone_ids must be a non-empty array of positive integers', 400);
   }
 
   const region = await db('regions').where('id', id).first();
   if (!region) return res.error('Region not found', 404);
-  const zone = await db('zones').where('id', zone_id).first();
-  if (!zone) return res.error('Zone not found', 404);
 
-  await db('zones').where('id', zone_id).update({ region_id: Number(id) });
+  const ids = [...new Set(requested.map(Number))];
+  const zones = await db('zones').whereIn('id', ids);
+  if (zones.length !== ids.length) return res.error('One or more zones not found', 404);
+
+  await db('zones').whereIn('id', ids).update({ region_id: Number(id) });
   await logAudit({
     trx: db,
     user_id: req.user.user_id,
-    action: 'ZONE_ASSIGNED_TO_REGION',
+    action: 'ZONES_ASSIGNED_TO_REGION',
     entity: 'region',
     entity_id: Number(id),
-    metadata: { zone_id: Number(zone_id), zone_name: zone.name },
+    metadata: { zone_ids: requested.map(Number), zones: requested.length },
   });
-  return res.success({ zone_id: Number(zone_id), region_id: Number(id) }, 'Zone assigned to region');
+  return res.success({ region_id: Number(id), zone_ids: requested.map(Number) }, 'Zones assigned to region');
 });
 
-module.exports = { summary, listRegions, createRegion, updateRegion, setCoordinator, assignZone };
+const unassignZone = asyncHandler(async (req, res) => {
+  if (!onlyRbac(req, res)) return;
+  const { id, zoneId } = req.params;
+
+  const region = await db('regions').where('id', id).first();
+  if (!region) return res.error('Region not found', 404);
+
+  const zone = await db('zones').where({ id: zoneId, region_id: id }).first();
+  if (!zone) return res.error('Zone is not assigned to this region', 404);
+
+  await db('zones').where('id', zoneId).update({ region_id: null });
+  await logAudit({
+    trx: db,
+    user_id: req.user.user_id,
+    action: 'ZONE_REMOVED_FROM_REGION',
+    entity: 'region',
+    entity_id: Number(id),
+    metadata: { zone_id: Number(zoneId), zone_name: zone.name },
+  });
+  return res.success({ zone_id: Number(zoneId), region_id: Number(id) }, 'Zone removed from region');
+});
+
+module.exports = { summary, listRegions, createRegion, updateRegion, setCoordinator, assignZones, unassignZone };
